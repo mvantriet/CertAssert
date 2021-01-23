@@ -1,0 +1,25 @@
+{
+	"compilerOptions": {
+		"declaration": true,
+		"outDir": "./build",
+		"declarationDir": "./build",
+		"target": "es5",
+		"module": "commonjs",
+		"noImplicitAny": true,
+		"removeComments": true,
+		"preserveConstEnums": true,
+		"sourceMap": false,
+		"esModuleInterop": true
+	},
+	"typedocOptions" : {
+		"mode" : "modules",
+		"out" : "docs"
+	},
+	"include": [
+		"src/**/*"
+	],
+	"exclude": [
+		"node_modules",
+		"build"
+	]
+}
