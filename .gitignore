@@ -1,0 +1,27 @@
+
+# IDE
+.vscode
+coverage
+
+# dependencies
+node_modules
+
+# build artifacts
+build
+dist
+backup
+gen
+iconv
+
+# misc
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.tar.gz
+*.tgz
+
+# npm
+npm-debug.log*
