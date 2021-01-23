@@ -1,0 +1,59 @@
+{
+  "name": "certassert",
+  "version": "0.0.1",
+  "description": "Simplifying user authentication flows build around x509 certificates",
+  "main": "index.ts",
+  "scripts": {
+    "build": "npm run build:ts && npm run build:bundle",
+    "build:bundle": "npx webpack",
+    "build:ts": "tsc --allowJs",
+    "lint": "eslint 'src/**/*.{js,ts,tsx}' --fix",
+    "clean": "rm -rf build",
+    "start": "ts-node src/app.ts",
+    "test": "jest test/**/*.test.ts test/*.test.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mvantriet/CertAssert.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mvantriet/CertAssert/issues"
+  },
+  "homepage": "https://github.com/mvantriet/CertAssert#readme",
+  "files": [
+    "build/**/*"
+  ],
+  "devDependencies": {
+    "@types/asn1js": "^2.0.0",
+    "@types/express": "^4.17.9",
+    "@types/jest": "^26.0.18",
+    "@types/node": "^14.14.10",
+    "@types/pkijs": "0.0.6",
+    "@types/pvutils": "^1.0.0",
+    "@types/request": "^2.48.4",
+    "@typescript-eslint/eslint-plugin": "^2.21.0",
+    "@typescript-eslint/parser": "^2.21.0",
+    "chai": "^4.2.0",
+    "eslint": "^6.8.0",
+    "jest": "^26.6.3",
+    "mocha": "^5.2.0",
+    "ts-jest": "^26.4.4",
+    "ts-loader": "^7.0.1",
+    "typescript": "^3.9.7",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.11",
+    "ts-node": "^8.9.1"
+  },
+  "dependencies": {
+    "asn1js": "^2.0.26",
+    "express": "^4.17.1",
+    "multer": "^1.4.2",
+    "pkijs": "^2.1.91",
+    "pvutils": "^1.0.17",
+    "request": "^2.88.2",
+    "utf8": "^3.0.0"
+  }
+}
