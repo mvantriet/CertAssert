@@ -9,7 +9,8 @@
     "build:ts": "tsc --allowJs",
     "lint": "eslint 'src/**/*.{js,ts,tsx}' --fix",
     "clean": "rm -rf build",
-    "start": "ts-node src/app.ts",
+    "start": "npm run start:example",
+    "start:example": "ts-node example/src/app.ts",
     "test": "jest test/**/*.test.ts test/*.test.ts"
   },
   "repository": {
@@ -42,10 +43,10 @@
     "mocha": "^5.2.0",
     "ts-jest": "^26.4.4",
     "ts-loader": "^7.0.1",
+    "ts-node": "^8.9.1",
     "typescript": "^3.9.7",
     "webpack": "^4.43.0",
-    "webpack-cli": "^3.3.11",
-    "ts-node": "^8.9.1"
+    "webpack-cli": "^3.3.11"
   },
   "dependencies": {
     "asn1js": "^2.0.26",
