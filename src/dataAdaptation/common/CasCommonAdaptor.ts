@@ -172,38 +172,6 @@ export namespace CasAdaptation {
                 }
               }
 
-
-              const keyUsageExtensionRaw = new Uint8Array(internalKeyUsage.parsedValue.valueBeforeDecode);
-              if (keyUsageExtensionRaw.length > 3) {
-                if (keyUsageExtensionRaw[0] === 3) {
-                  const nofBytes = keyUsageExtensionRaw[1];
-                  if (nofBytes > 0) {
-                    const nofBitShift = keyUsageExtensionRaw[2];
-                    let keyUsageBitString = 0;
-                    const arr = new Uint8Array(internalKeyUsage.parsedValue.valueBlock.valueHex);
-                    for (let i = 0; i < internalKeyUsage.parsedValue.valueBlock.blockLength - 1; i++) {
-                      keyUsageBitString = (keyUsageBitString << 8) + arr[i];
-                    }
-                    keyUsageBitString >>= nofBitShift;
-                    let keyUsageBitMask = keyUsageBitString.toString(2);
-                    const nofTotalBits = ((nofBytes - 1) * 8) - nofBitShift;
-                    keyUsageBitMask = ('0'.repeat(nofTotalBits - keyUsageBitMask.length)) + keyUsageBitMask;
-                    return {
-                      critical: internalKeyUsage.critical,
-                      digitalSignature: keyUsageBitMask[0] === '1',
-                      nonRepudiation: keyUsageBitMask[1] === '1',
-                      keyEncipherment: keyUsageBitMask[2] === '1',
-                      dataEncipherment: keyUsageBitMask[3] === '1',
-                      keyAgreement: keyUsageBitMask[4] === '1',
-                      keyCertSign: keyUsageBitMask[5] === '1',
-                      cRLSign: keyUsageBitMask[6] === '1',
-                      encipherOnly: keyUsageBitMask[7] === '1',
-                      decipherOnly: keyUsageBitMask[8] === '1',
-                    };
-                  }
-                }
-              }
-
               return out;
           }
 
