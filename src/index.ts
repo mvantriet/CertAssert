@@ -10,7 +10,7 @@ export class CertAssert {
 
     constructor() {
         this.app = express();
-        this.server = new CasServer('./tests/integration/gen/cert/server/certassertServerCert.key', './tests/integration/gen/cert/server/certassertServerCert.pem', ['./tests/integration/gen/cert/ca/CertAssertLocalCA.pem'],
+        this.server = new CasServer('./test/integration/gen/cert/server/certassertServerCert.key', './test/integration/gen/cert/server/certassertServerCert.pem', ['./test/integration/gen/cert/ca/CertAssertLocalCA.pem'],
                                         this.app, 8443, 8080);
     }
 
