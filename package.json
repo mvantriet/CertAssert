@@ -11,7 +11,7 @@
     "clean": "rm -rf build",
     "start": "npm run start:example",
     "start:example": "ts-node example/src/app.ts",
-    "test": "jest test/**/*.test.ts test/*.test.ts"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
