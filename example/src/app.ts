@@ -1,3 +1,12 @@
-import { CertAssert } from '../../src/index';
+import { CertAssert, CertAssertConfig, CasLogLevel } from '../../src/index';
 
-new CertAssert().init();
+const config:CertAssertConfig = {
+    acceptedCAs: ['./test/integration/gen/cert/ca/CertAssertLocalCA.pem'],
+    serverCertificatePath: './test/integration/gen/cert/server/certassertServerCert.pem',
+    serverCertificateKeyPath: './test/integration/gen/cert/server/certassertServerCert.key',
+    httpRedirectPort: 8080,
+    securePort: 8443,
+    logLevel: CasLogLevel.DEBUG
+}
+
+new CertAssert(config).init();
