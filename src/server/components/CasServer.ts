@@ -4,11 +4,13 @@ import * as https from "https";
 import * as http from "http";
 import * as tls from "tls";
 
+import { CasComponent } from '../../common/CasComponent';
 import { ICasServer } from '../interfaces/ICasServer';
+import { ICasLogger } from '../../logging/interfaces/ICasLogger';
 
 export type ICasRequestHandler = (req: http.IncomingMessage, res: http.ServerResponse) => void;
 
-export class CasServer implements ICasServer {
+export class CasServer extends CasComponent implements ICasServer {
 
   private keyPath: string;
   private certificatePath: string;
@@ -27,13 +29,16 @@ export class CasServer implements ICasServer {
               initialCAcertificatesPaths: string[],
               requestHandler: ICasRequestHandler,
               serverPort: number,
-              httpRedirectPort: number) {
+              httpRedirectPort: number,
+              logger: ICasLogger) {
+    super(logger);
     this.keyPath = keyPath;
     this.certificatePath = certificatePath;
     this.requestHandler = requestHandler;
     this.initialCAcertificatesPaths = initialCAcertificatesPaths;
     this.serverPort = serverPort;
     this.httpRedirectPort = httpRedirectPort;
+    this.logger = logger;
     this.openSecureConnections = new Set<tls.TLSSocket>();
     this.openInsecureConnections = new Set<tls.TLSSocket>();
   }
@@ -96,12 +101,12 @@ export class CasServer implements ICasServer {
       });
     });
     this.insecureServer.listen(this.httpRedirectPort);
-
-    console.log(`Server started on: https://localhost:${this.serverPort}`);
+    this.logger.log(`Server started on: https://localhost:${this.serverPort} and redirect from http://localhost:${this.httpRedirectPort}`);
   }
 
   close(force: boolean) {
     if (force) {
+      this.logger.log(`Server closing open connections forcefully`);
       this.openSecureConnections.forEach((con) => {
         con.destroy();
         this.openSecureConnections.delete(con);
@@ -116,6 +121,7 @@ export class CasServer implements ICasServer {
         if (err) {
           reject(err);
         } else {
+          this.logger.log(`Secure server on port: ${this.serverPort} closed`);
           resolve();
         }
       })
@@ -125,6 +131,7 @@ export class CasServer implements ICasServer {
         if (err) {
           reject(err);
         } else {
+          this.logger.log(`Insecure server on port: ${this.httpRedirectPort} closed`);
           resolve();
         }
       })  
@@ -133,7 +140,10 @@ export class CasServer implements ICasServer {
     // For example jest otherwise will still pickup the listener process
     return Promise.all([httpsServerClose, httpServerClose]).then(() => {
       return new Promise((resolve, reject) => {
-        setTimeout(() => resolve(), 2000);
+        setTimeout(() => {
+          this.logger.log(`Server close done`);
+          resolve()
+        }, 2000);
       })
     });
   }
