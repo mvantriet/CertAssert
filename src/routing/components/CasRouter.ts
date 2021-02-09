@@ -2,9 +2,11 @@ import { Router } from 'express';
 import { ICasRouter } from '../interfaces/ICasRouter';
 import { ICasLogger, CasLogLevel } from '../../logging/interfaces/ICasLogger';
 import { ICasApiHandler } from '../../api/interfaces/ICasApiHandler';
-import { CasComponent } from '../../common/CasComponent';
+import { CasHandler } from '../../common/CasHandler';
 import { CasAuthHandler } from '../../api/handlers/CasAuthHandler';
-
+import { CasWhoAmIHandler } from '../../api/handlers/CasWhoAmIHandler';
+import { CasListHandler } from '../../api/handlers/CasListHandler';
+import { ICasDb } from '../../db/interfaces/ICasDb';
 
 enum HTTP_METHOD {
     GET,
@@ -17,12 +19,12 @@ type EndPointConfig = {
     handler: ICasApiHandler
 }
 
-export class CasRouter extends CasComponent implements ICasRouter {
+export class CasRouter extends CasHandler implements ICasRouter {
 
     private routeDefinitions: Array<EndPointConfig>;
 
-    constructor(logger: ICasLogger) {
-        super(logger);
+    constructor(db: ICasDb, logger: ICasLogger) {
+        super(db, logger);
         this.routeDefinitions = this.getRouteDefinitions();
     }
 
@@ -46,10 +48,22 @@ export class CasRouter extends CasComponent implements ICasRouter {
     }
 
     private getRouteDefinitions(): Array<EndPointConfig> {
-        return [{
+        return [
+        {
             apipath: '/auth',
             httpMethod: HTTP_METHOD.GET,
-            handler: new CasAuthHandler(this.logger)
-        }]
+            handler: new CasAuthHandler(this.db, this.logger)
+        },
+        {
+            apipath: '/whoami',
+            httpMethod: HTTP_METHOD.GET,
+            handler: new CasWhoAmIHandler(this.db, this.logger)
+        },
+        {
+            apipath: '/list',
+            httpMethod: HTTP_METHOD.GET,
+            handler: new CasListHandler(this.db, this.logger)
+        }
+        ]
     }
 }
