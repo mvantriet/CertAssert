@@ -1,15 +1,20 @@
 import { ICasApiHandler } from "../interfaces/ICasApiHandler";
 import {Request, Response} from 'express';
-import { CasComponent } from "../../common/CasComponent";
+import { CasHandler } from "../../common/CasHandler";
 import { ICasLogger } from "../../logging/interfaces/ICasLogger";
+import { ICasDb } from '../../db/interfaces/ICasDb';
 
-export class CasAuthHandler extends CasComponent implements ICasApiHandler {
+export class CasAuthHandler extends CasHandler implements ICasApiHandler {
     
-    constructor(logger: ICasLogger) {
-        super(logger);
+    constructor(db: ICasDb, logger: ICasLogger) {
+        super(db, logger);
     }
 
     public handle(req: Request, resp: Response): void {
-        resp.status(200).send({result: req.client.authorized});
+        if (req.client.authorized) {
+            resp.status(200).send({result: req.client.authorized});
+        } else {
+            resp.status(403).send({});
+        }
     }
 }
