@@ -1,6 +1,6 @@
 {
   "name": "certassert",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Simplifying user authentication flows build around x509 certificates",
   "main": "index.ts",
   "scripts": {
@@ -54,6 +54,7 @@
     "express": "^4.17.1",
     "helmet": "^4.4.1",
     "multer": "^1.4.2",
+    "node-jose": "^2.0.0",
     "oidc-provider": "git://github.com/panva/node-oidc-provider.git#v6.31.0",
     "pkijs": "^2.1.91",
     "pvutils": "^1.0.17",
