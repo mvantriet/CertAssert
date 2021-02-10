@@ -10,6 +10,8 @@ import { ICasLogger, CasLogLevel } from './logging/interfaces/ICasLogger';
 import { CasLogger } from './logging/components/CasLogger';
 import { ICasRouter } from './routing/interfaces/ICasRouter';
 import { CasRouter } from './routing/components/CasRouter';
+import { ICasOidcProvider } from './oidc/interfaces/ICasOidcProvider';
+import { CasOidcMtlsProvider } from './oidc/components/CasOidcMtlsProvider';
 // Import type definitions
 import './dataAdaptation/networking/types/CasNetworkingTypes';
 import { ICasDb } from './db/interfaces/ICasDb';
@@ -23,7 +25,8 @@ export type CertAssertConfig = {
     acceptedCAs: Array<string>;
     securePort: number,
     httpRedirectPort: number,
-    logLevel: CasLogLevel
+    logLevel: CasLogLevel,
+    oidcIssuer: string
 }
 
 export class CertAssert {
@@ -32,10 +35,12 @@ export class CertAssert {
     private server: ICasServer;
     private logger: ICasLogger;
     private router: ICasRouter;
+    private oidc: ICasOidcProvider;
     private db: ICasDb;
 
     constructor(config: CertAssertConfig) {
         this.app = express();
+        this.oidc = new CasOidcMtlsProvider(`http://localhost:${3000}`, './test/integration/gen/cert/ca/CertAssertLocalCA.pem', './test/integration/gen/cert/ca/CertAssertLocalCA.key');
         this.logger = new CasLogger(config.logLevel);
         this.db = new CasDbInMem(this.logger);
         this.router = new CasRouter(this.db, this.logger);
