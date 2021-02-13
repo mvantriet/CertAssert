@@ -3,21 +3,20 @@ import * as http from 'http';
 import * as http2 from 'http2';
 import { Provider } from 'oidc-provider';
 import { ICasOidcProvider } from '../interfaces/ICasOidcProvider';
-import { x509Jwk } from '../config/CasOidcConfig';
 import { CertificateUtils } from '../../utils/CertificateUtils';
-const jose = require('node-jose');
+import jose, { JSONWebKey } from 'jose';
 
 export class CasOidcMtlsProvider implements ICasOidcProvider {
 
     private issuer: string;
-    private caKey: string;
-    private caCert: string;
+    private signKey: Buffer;
+    private signCert: Buffer;
     private provider: Provider;
 
-    constructor(issuer: string, caCertPath: string, caKeyPath: string) {
+    constructor(issuer: string, signCertPath: string, signKeyPath: string) {
         this.issuer = issuer;
-        this.caCert = fs.readFileSync(CertificateUtils.normaliseCert(caCertPath)).toString();
-        this.caKey = fs.readFileSync(CertificateUtils.normaliseKey(caKeyPath)).toString();
+        this.signCert = fs.readFileSync(signCertPath);
+        this.signKey = fs.readFileSync(signKeyPath);
         this.provider = this.init();
     }
 
@@ -47,8 +46,8 @@ export class CasOidcMtlsProvider implements ICasOidcProvider {
                     }
                     return true;
                   },
-                  enabled: true }, // defaults to false
-                revocation: { enabled: true }, // defaults to false
+                  enabled: true },
+                revocation: { enabled: true }
             },
             ttl: {
                 AccessToken: 8 * 60 * 60,
@@ -57,33 +56,33 @@ export class CasOidcMtlsProvider implements ICasOidcProvider {
                 DeviceCode: 360,
                 RefreshToken: 5 * 24 * 60 * 60
             },
-            clients: [{
-                grant_types: [
-                    "urn:ietf:params:oauth:grant-type:device_code"
-                ],
-                response_types: [],
-                token_endpoint_auth_method: "self_signed_tls_client_auth",
-                client_id: "0X33oJQ3Se_lLiQluw2UJ",
-                jwks: {
-                    keys: [
-                        this.toX509Jwk()
-                    ]
-                },
-                redirect_uris: []
-            }]
+            clients: [
+            {
+                client_id: 'test_implicit_app',
+                grant_types: ['implicit', 'authorization_code'],
+                response_types: ['id_token', 'code'],
+                redirect_uris: ['https://lvh.me:15000/oidc-client-sample.html'],
+                post_logout_redirect_uris: ['https://lvh.me:15000/oidc-client-sample.html'],
+                token_endpoint_auth_method: 'none'
+            }
+            ],
+            jwks: {
+                keys: [
+                    this.signCertToWebKey()
+                ]
+            }
         });
     }
 
-    private toX509Jwk(): x509Jwk {
-        const { e, kty, n } = jose.JWK.asKey(this.caKey).toJWK();
-        return {
-            e: e,
-            kty: kty,
-            n: n,
-            x5c: [
-                this.caCert
-            ]
-        }
+    private signCertToWebKey(): JSONWebKey {
+        return jose.JWK.asKey(
+            this.signKey, 
+            { 
+                x5c: [CertificateUtils.normaliseCert(this.signCert.toString('utf-8'))], 
+                alg: 'PS256', 
+                use: 'sig',
+            }
+        ).toJWK(true);
     }
 
 }
