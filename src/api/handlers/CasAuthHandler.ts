@@ -1,4 +1,4 @@
-import { ICasApiHandler } from "../interfaces/ICasApiHandler";
+import { ICasApiHandler } from "../../routing/interfaces/ICasApiHandler";
 import {Request, Response} from 'express';
 import { CasHandler } from "../../common/CasHandler";
 import { ICasLogger } from "../../logging/interfaces/ICasLogger";
