@@ -1,5 +1,5 @@
-const fs = require('fs');
-const constants = require('constants');
+import fs from 'fs';
+import constants from 'constants';
 import * as https from "https";
 import * as http from "http";
 import * as tls from "tls";
