@@ -1,5 +1,6 @@
 import { CasCertificateAdaptation } from '../common/CasCommonAdaptor';
-import { Certificate } from 'tls';
+import { DetailedPeerCertificate } from "tls";
+import { CasCert } from '../../../model/CasCert';
 
 export class CasCertInputAdaptor {
 
@@ -7,8 +8,50 @@ export class CasCertInputAdaptor {
         return CasCertificateAdaptation.Adaptor.fromPem(input);
     }
 
-    public static fromSocketCert(input: any): CasCertificateAdaptation.CertParseResult {
-        // TODO
-        return {failureDetails: 'UnImplemented Method'}
+    public static fromSocket(input: DetailedPeerCertificate, authorised: boolean): CasCertificateAdaptation.CertParseResult {
+          const out:CasCertificateAdaptation.CertParseResult = {};
+          // Start at root of chain
+          let currentCertInChain:DetailedPeerCertificate = input;
+          let clientCertificateInChain: CasCert.ClientCert;
+          let currentAdaptedCertInChain:CasCert.Cert;
+          const seenSerialNrs = [];
+          let chainIndex = 0;
+          if (currentCertInChain && !this.isEmpty(currentCertInChain)) {
+            do {
+                let adaptation:CasCertificateAdaptation.CertParseResult = {}
+                try {
+                    adaptation = CasCertificateAdaptation.Adaptor.fromDer(currentCertInChain.raw, 
+                        CasCertificateAdaptation.Adaptor.normalisePem(currentCertInChain.raw.toString('base64')));
+                    if (!adaptation.failureDetails) {
+                        if (chainIndex === 0) {
+                            clientCertificateInChain = adaptation.cert as CasCert.ClientCert;
+                            clientCertificateInChain.authorised = authorised;
+                            out.cert = clientCertificateInChain;
+                            currentAdaptedCertInChain = adaptation.cert;
+                        } else {
+                            currentAdaptedCertInChain.setIssuerCertRef(adaptation.cert);
+                            currentAdaptedCertInChain = adaptation.cert;
+                        }
+                    } else {
+                        out.failureDetails = `Certificate Input Adaptation failed at chainIndex: ${chainIndex}. Error: ${adaptation.failureDetails}`
+                        return out;
+                    }
+                } catch(err) {
+                    out.failureDetails = `Certificate Input Adaptation failed at chainIndex: ${chainIndex}. Error: ${err.toString()}`
+                }
+
+              seenSerialNrs.push(currentCertInChain.serialNumber);
+              currentCertInChain = currentCertInChain.issuerCertificate;
+              chainIndex++;
+            } while (currentCertInChain && !seenSerialNrs.includes(currentCertInChain.serialNumber) && !this.isEmpty(currentCertInChain));
+          } else {
+              out.failureDetails = `No client certificate provided`;
+          }
+        return out;
     }
+
+    private static isEmpty(obj:any) {
+        return Object.keys(obj).length === 0;
+    }
+
 }
