@@ -1,14 +1,12 @@
 import * as styled from 'styled-components'
 
 export type CasLoginViewStyledProps = {
+    authorised: boolean
 }
 
 const CasLoginViewStyled = styled.default.div<CasLoginViewStyledProps>`
-    color: green;
-    background-color: black;
-
     h1 {
-        color: green;
+        color: ${props => props.authorised ? 'green' : 'red'};
     };
 `
 export default CasLoginViewStyled;
