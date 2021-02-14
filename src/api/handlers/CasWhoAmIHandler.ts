@@ -12,9 +12,9 @@ export class CasWhoAmIHandler extends CasHandler implements ICasApiHandler {
 
     public handle(req: Request, resp: Response): void {
         if (req.client.authorized) {
-            resp.status(200).send({result: req.client.authorized});
+            resp.status(200).send({authorized: req.client.authorized, cert: req.cas.clientCertificate});
         } else {
-            resp.status(403).send({authorized: req.client.authorized, cert: {}});
+            resp.status(403).send({authorized: false});
         }
     }
 }
