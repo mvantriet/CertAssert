@@ -6,7 +6,7 @@ const config:CertAssertConfig = {
     serverCertificateKeyPath: './test/integration/gen/cert/server/certassertServerCert.key',
     oidcIssuer: 'http://localhost',
     httpRedirectPort: 8080,
-    securePort: 8443,
+    securePort: 9443,
     logLevel: CasLogLevel.DEBUG
 }
 
