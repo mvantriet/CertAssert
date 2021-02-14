@@ -82,13 +82,22 @@ export namespace CasCertificateAdaptation {
 
     export class Adaptor {
         /**
-         * DER -> Internal PkiJS Cert
+         * DER -> CasCert Model
          * @param der 
          */
-        public static fromDer(der: Buffer): InternalCertificate {
-            const ber = new Uint8Array(der).buffer;
-            const asn1 = asn1js.fromBER(ber);
-            return new Pkijs.Certificate({ schema: asn1.result });
+        public static fromDer(der: Buffer, pem: string): CertParseResult {
+          try {
+            const internalCert = this.derToInternal(der);
+            return {
+                cert: new CasCert.Cert(this.adaptCertSubject(internalCert), this.serialNumber(internalCert), this.getCertLifetime(internalCert),
+                            this.adaptCertIssuer(internalCert), this.adaptCertExtensions(internalCert), this.adaptPublicKeyInfo(internalCert), pem, 
+                            this.certSha1(der), this.certSha256(der))
+            };
+          } catch (derErr) {
+            return {
+              failureDetails: derErr
+            }
+          }
         }
 
         /**
@@ -97,14 +106,9 @@ export namespace CasCertificateAdaptation {
          */
         public static fromRaw(raw: Buffer): CertParseResult {
             try {
-                const pem:string = this.structurePemCert(raw.toString('utf8'));
+                const pem:string = this.normalisePem(raw.toString('utf8'));
                 const der:Buffer = this.pemToDer(pem);
-                const internalCert:any = this.fromDer(der);
-                return {
-                    cert: new CasCert.Cert(this.adaptCertSubject(internalCert), this.serialNumber(internalCert), this.getCertLifetime(internalCert),
-                                this.adaptCertIssuer(internalCert), this.adaptCertExtensions(internalCert), this.adaptPublicKeyInfo(internalCert), pem, 
-                                this.certSha1(der), this.certSha256(der))
-                };
+                return this.fromDer(der, pem);
             } catch (pemErr) {
               return {
                 failureDetails: pemErr
@@ -125,7 +129,42 @@ export namespace CasCertificateAdaptation {
               }
             }
         }
-        
+
+        /**
+         * Restructures PEM cert to ensure consistency 
+         * when x509 PEM's format begin and end label are added
+         * @param pemCert 
+         */
+        public static normalisePem(pemCert: string): string {
+          let out:string = pemCert;
+          let certLabelsAdded:boolean = false;
+          const certBeginLabelIdx:number = pemCert.indexOf(CasAdaptationConstants.CERT_BEGIN_LABEL);
+          const certEndLabelIdx:number = pemCert.indexOf(CasAdaptationConstants.CERT_END_LABEL);
+          if (certBeginLabelIdx === -1) {
+              out = `${CasAdaptationConstants.CERT_BEGIN_LABEL}${os.EOL}${out}`;
+              certLabelsAdded = true;
+          }
+          if (certEndLabelIdx === -1) {
+              out = `${out + os.EOL}${CasAdaptationConstants.CERT_END_LABEL}`;
+              certLabelsAdded = true;
+          }
+          if (!certLabelsAdded) {
+              // Make robust for optional openssl -notext flag.
+              out = pemCert.substring(certBeginLabelIdx, certEndLabelIdx + CasAdaptationConstants.CERT_END_LABEL.length);
+          }
+          return out;
+        }
+
+        /**
+         * DER -> Internal PkiJS Cert
+         * @param der 
+         */
+        private static derToInternal(der: Buffer): InternalCertificate {
+          const ber = new Uint8Array(der).buffer;
+          const asn1 = asn1js.fromBER(ber);
+          return new Pkijs.Certificate({ schema: asn1.result });
+        }
+
         private static keyUsageBitSets(bitmask:string, out:CasCert.ExtensionKeyUsage): CasCert.ExtensionKeyUsage {
           Object.keys(CasAdaptationConstants.KEY_USAGE_BIT_MAPPING).forEach((keyUsageField: KEY_USAGE_FIELD) => {
             const prop:any = {};
@@ -385,31 +424,6 @@ export namespace CasCertificateAdaptation {
           private static pemToDer(pem: string): Buffer {
             const derStr: string = pem.replace(CasAdaptationConstants.CERT_LABEL_REGEXP, '');
             return Buffer.from(derStr, 'base64');
-          }
-
-          /**
-           * Restructures PEM cert to ensure consistency 
-           * when x509 PEM's format begin and end label are added
-           * @param pemCert 
-           */
-          private static structurePemCert(pemCert: string): string {
-            let out:string = pemCert;
-            let certLabelsAdded:boolean = false;
-            const certBeginLabelIdx:number = pemCert.indexOf(CasAdaptationConstants.CERT_BEGIN_LABEL);
-            const certEndLabelIdx:number = pemCert.indexOf(CasAdaptationConstants.CERT_END_LABEL);
-            if (certBeginLabelIdx === -1) {
-                out = `${CasAdaptationConstants.CERT_BEGIN_LABEL}${os.EOL}${out}`;
-                certLabelsAdded = true;
-            }
-            if (certEndLabelIdx === -1) {
-                out = `${out + os.EOL}${CasAdaptationConstants.CERT_END_LABEL}`;
-                certLabelsAdded = true;
-            }
-            if (!certLabelsAdded) {
-                // Make robust for optional openssl -notext flag.
-                out = pemCert.substring(certBeginLabelIdx, certEndLabelIdx + CasAdaptationConstants.CERT_END_LABEL.length);
-            }
-            return out;
           }
 
           /**
