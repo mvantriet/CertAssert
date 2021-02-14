@@ -14,6 +14,7 @@ import { CasApiRouter } from './api/components/CasApiRouter';
 import { CasInteractionsRouter } from './interactions/components/CasInteractionsRouter';
 import { ICasOidcProvider } from './oidc/interfaces/ICasOidcProvider';
 import { CasOidcMtlsProvider } from './oidc/components/CasOidcMtlsProvider';
+import { CasDataAdaptationHandler } from './dataAdaptation/handlers/CasDataAdaptionHandler';
 // Import type definitions
 import './dataAdaptation/networking/types/CasNetworkingTypes';
 import { ICasDb } from './db/interfaces/ICasDb';
@@ -58,7 +59,7 @@ export class CertAssert {
         this.app.use(cors());
         this.app.use(helmet());
         this.app.use(compression());
-        this.app.use(express.static("public"));
+        this.app.use(new CasDataAdaptationHandler(this.db, this.logger).handle);
         this.app.use('/api', this.router.toRouter());
         this.app.use("/interactions", this.interactions.toRouter());
         this.app.use(this.oidc.getCallback());
