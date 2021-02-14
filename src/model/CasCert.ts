@@ -115,9 +115,11 @@ export namespace CasCert {
       base64: string;
       sha1DigestHex: string;
       sha256DigestHex: string;
+      issuerCertRef: Cert;
     
       constructor(subject: DistinguishedName, serialNr: string, validityPeriod: ValidityPeriod, issuer: DistinguishedName,
-        extensions: Extensions, publicKeyInfo: KeyInfo, base64: string, sha1DigestHex: string, sha256DigestHex: string) {
+        extensions: Extensions, publicKeyInfo: KeyInfo, base64: string, sha1DigestHex: string, sha256DigestHex: string, 
+        issuerCertRef?: Cert) {
           this.subject = subject;
           this.serialNr = serialNr;
           this.validityPeriod = validityPeriod;
@@ -127,6 +129,11 @@ export namespace CasCert {
           this.base64 = base64;
           this.sha1DigestHex = sha1DigestHex;
           this.sha256DigestHex = sha256DigestHex;
+          this.issuerCertRef = issuerCertRef;
+      }
+
+      setIssuerCertRef(issuerCertRef: Cert) {
+        this.issuerCertRef = issuerCertRef;
       }
     }
     
@@ -144,13 +151,13 @@ export namespace CasCert {
     
     export class ClientCert extends Cert {
     
-      authenticated: boolean;
+      authorised: boolean;
     
       constructor(subject: DistinguishedName, serialNr: string, validityPeriod: ValidityPeriod, issuer: DistinguishedName,
         extensions: Extensions, publicKeyInfo: KeyInfo, base64: string, sha1DigestHex: string, sha256DigestHex: string,
         authenticated: boolean) {
           super(subject, serialNr, validityPeriod, issuer, extensions, publicKeyInfo, base64, sha1DigestHex, sha256DigestHex);
-          this.authenticated = authenticated;
+          this.authorised = authenticated;
       }
     }
 }
