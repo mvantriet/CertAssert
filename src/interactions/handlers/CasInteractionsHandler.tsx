@@ -8,19 +8,24 @@ import { CasLoginView } from "../views/login/CasLoginView";
 import { Ssr } from "../views/ssr/CasSsrHelper";
 
 export class CasInteractionsHandler extends CasHandler implements ICasApiHandler {
-    constructor(db: ICasDb, logger: ICasLogger) {
+    
+    private singinPath: string;
+    private abortPath: string;
+
+    constructor(db: ICasDb, logger: ICasLogger, signinPath: string, abortPath: string) {
         super(db, logger);
+        this.singinPath = signinPath;
+        this.abortPath = abortPath;
     }
 
     public handle(req: Request, resp: Response): void {
-        console.log(req.client.authorized)
-        console.log(req.cas)
-        
         resp.send(
             Ssr('Login',<CasLoginView 
                             title={'Login' }
                             authorised={req.client.authorized}
                             casExtensions={req.cas}
+                            signinPath={this.singinPath}
+                            abortPath={this.abortPath}
                         />)
         );
     }
