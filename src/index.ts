@@ -44,7 +44,7 @@ export class CertAssert {
 
     constructor(config: CertAssertConfig) {
         this.app = express();
-        this.oidc = new CasOidcMtlsProvider(`https://localhost:${config.securePort}`, './test/integration/gen/cert/ca/CertAssertLocalCA.pem', './test/integration/gen/cert/ca/CertAssertLocalCA.key');
+        this.oidc = new CasOidcMtlsProvider(`https://localhost:${config.securePort}`);
         this.logger = new CasLogger(config.logLevel);
         this.db = new CasDbInMem(this.logger);
         this.router = new CasApiRouter(this.db, this.logger);
@@ -61,8 +61,10 @@ export class CertAssert {
         this.app.use(compression());
         this.app.use(new CasDataAdaptationHandler(this.db, this.logger).handle);
         this.app.use('/api', this.router.toRouter());
-        this.app.use("/interactions", this.interactions.toRouter());
-        this.app.use(this.oidc.getCallback());
-        this.server.init();
+        this.app.use("/interaction", this.interactions.toRouter());
+        this.oidc.init().then(() => {
+            this.app.use(this.oidc.getCallback());
+            this.server.init();    
+        })
     }
 } 
