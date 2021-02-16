@@ -1,4 +1,14 @@
 export namespace CasCert {
+    export enum DistinguishedNameAttribute {
+      "Common Name"="CN",
+      "Organisation"="O",
+      "Organisation Unit"="OU",
+      "Locality"="L",
+      "Country"="C",
+      "State"="ST",
+      "Email Address"="emailAddress"
+    }
+
     export type DistinguishedName = {
       CN?: string;
       O?: string;
