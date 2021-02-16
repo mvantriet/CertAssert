@@ -1,31 +1,24 @@
-import fs from 'fs';
 import * as http from 'http';
 import * as http2 from 'http2';
 import { Provider } from 'oidc-provider';
 import { ICasOidcProvider } from '../interfaces/ICasOidcProvider';
-import { CertificateUtils } from '../../utils/CertificateUtils';
-import jose, { JSONWebKey } from 'jose';
+import * as jose from 'jose';
 
 export class CasOidcMtlsProvider implements ICasOidcProvider {
 
     private issuer: string;
-    private signKey: Buffer;
-    private signCert: Buffer;
     private provider: Provider;
 
-    constructor(issuer: string, signCertPath: string, signKeyPath: string) {
+    constructor(issuer: string) {
         this.issuer = issuer;
-        this.signCert = fs.readFileSync(signCertPath);
-        this.signKey = fs.readFileSync(signKeyPath);
-        this.provider = this.init();
     }
 
     public getCallback(): (req: http.IncomingMessage | http2.Http2ServerRequest, res: http.ServerResponse | http2.Http2ServerResponse) => void {
         return this.provider.callback;
     }
 
-    private init(): Provider {
-        return new Provider(this.issuer, {
+    public async init(): Promise<void> {
+        this.provider = new Provider(this.issuer, {
             cookies: {
                 keys: ['a5cfd81d8c'],
                 long: { signed: true, maxAge: (5 * 24 * 60 * 60) * 1000 },
@@ -68,21 +61,15 @@ export class CasOidcMtlsProvider implements ICasOidcProvider {
             ],
             jwks: {
                 keys: [
-                    this.signCertToWebKey()
-                ]
-            }
+                    await this.signCertToWebKey()
+                ],
+              },
         });
     }
 
-    private signCertToWebKey(): JSONWebKey {
-        return jose.JWK.asKey(
-            this.signKey, 
-            { 
-                x5c: [CertificateUtils.normaliseCert(this.signCert.toString('utf-8'))], 
-                alg: 'PS256', 
-                use: 'sig',
-            }
-        ).toJWK(true);
+    private async signCertToWebKey(): Promise<jose.JSONWebKey> {
+        const rsaKey:jose.JWK.RSAKey = await jose.JWK.generate('RSA', 2048, {alg: 'RS256', use: 'sig'});
+        return rsaKey.toJWK(true);
     }
 
 }
