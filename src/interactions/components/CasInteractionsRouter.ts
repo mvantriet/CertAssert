@@ -11,13 +11,23 @@ export class CasInteractionsRouter extends CasRouter {
     }
 
     protected getRouteDefinitions(): Array<EndPointConfig> {
+        const signinPath = '/:uid/login';
+        const abortPath = '/:uid/abort';
         return [
             {
                 apipath: '/:uid',
                 httpMethod: HTTP_METHOD.GET,
                 handlers: [
                     CasHandler.disableCache, 
-                    new CasInteractionsHandler(this.db, this.logger).handle
+                    new CasInteractionsHandler(this.db, this.logger, signinPath, abortPath).getHandle()
+                ]
+            },
+            {
+                apipath: signinPath,
+                httpMethod: HTTP_METHOD.GET,
+                handlers: [
+                    CasHandler.disableCache, 
+                    new CasInteractionsHandler(this.db, this.logger, signinPath, abortPath).getHandle()
                 ]
             }
         ];
