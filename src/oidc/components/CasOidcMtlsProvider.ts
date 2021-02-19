@@ -8,6 +8,7 @@ import * as CasCert from "../../model/CasCert";
 import { RequestCasExtensions } from "../../dataAdaptation/networking/types/CasNetworkingTypes";
 import * as jose from 'jose';
 import { ICasDb } from '../../db/interfaces/ICasDb';
+import { CasOidcCacheDb } from '../../db/components/CasOidcCacheDb';
 
 type ClaimCtx = {
     req: {
@@ -83,7 +84,8 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
                 keys: [
                     await this.signCertToWebKey()
                 ],
-              },
+            },
+            adapter: CasOidcCacheDb,
             findAccount: this.findAccount.bind(this)
         });
     }
