@@ -4,6 +4,7 @@ import { ICasLogger, CasLogLevel } from '../../logging/interfaces/ICasLogger';
 import { ICasRouteHandle } from '../interfaces/ICasApiHandler';
 import { CasHandler } from '../../common/CasHandler';
 import { ICasDb } from '../../db/interfaces/ICasDb';
+import { ICasOidcInteractionsProvider } from '../../oidc/interfaces/ICasOidcInteractionsProvider';
 
 export enum HTTP_METHOD {
     GET,
@@ -18,11 +19,12 @@ export type EndPointConfig = {
 
 export abstract class CasRouter extends CasHandler implements ICasRouter {
 
+    protected interactionsProvider: ICasOidcInteractionsProvider;
     protected routeDefinitions: Array<EndPointConfig>;
 
-    constructor(db: ICasDb, logger: ICasLogger) {
+    constructor(db: ICasDb, logger: ICasLogger, interactionsProvider: ICasOidcInteractionsProvider) {
         super(db, logger);
-        this.routeDefinitions = this.getRouteDefinitions();
+        this.interactionsProvider = interactionsProvider;
     }
 
     public toRouter(): Router {
