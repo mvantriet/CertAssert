@@ -4,7 +4,7 @@ import { CasHandler } from "../../common/CasHandler";
 import { ICasLogger } from "../../logging/interfaces/ICasLogger";
 import { ICasDb } from '../../db/interfaces/ICasDb';
 
-export class CasAuthHandler extends CasHandler implements ICasApiHandler {
+export class CasApiAuthHandler extends CasHandler implements ICasApiHandler {
     
     constructor(db: ICasDb, logger: ICasLogger) {
         super(db, logger);
