@@ -1,4 +1,3 @@
-export namespace CasCert {
     export enum DistinguishedNameAttribute {
       "Common Name"="CN",
       "Organisation"="O",
@@ -113,7 +112,7 @@ export namespace CasCert {
       notBefore: number;
       notAfter: number;
     }
-    
+
     export class Cert {
     
       subject: DistinguishedName;
@@ -125,7 +124,7 @@ export namespace CasCert {
       base64: string;
       sha1DigestHex: string;
       sha256DigestHex: string;
-      issuerCertRef: Cert;
+      issuerCertRef: Cert | undefined;
     
       constructor(subject: DistinguishedName, serialNr: string, validityPeriod: ValidityPeriod, issuer: DistinguishedName,
         extensions: Extensions, publicKeyInfo: KeyInfo, base64: string, sha1DigestHex: string, sha256DigestHex: string, 
@@ -170,4 +169,4 @@ export namespace CasCert {
           this.authorised = authenticated;
       }
     }
-}
+
