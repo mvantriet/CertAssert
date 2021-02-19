@@ -1,6 +1,6 @@
 {
     "watch": ["src"],
     "ext": "ts,tsx,hbs,json",
-    "ignore": ["src/**/*.spec.ts"],
-    "exec": "ts-node ./example/src/app.ts"
+    "ignore": ["src/interactions/static/build","src/**/*.spec.ts"],
+    "exec": "npm start"
 }
