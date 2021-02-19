@@ -1,32 +1,35 @@
 import { ICasLogger } from '../../logging/interfaces/ICasLogger';
-import { CasAuthHandler } from '../../api/handlers/CasAuthHandler';
-import { CasWhoAmIHandler } from '../../api/handlers/CasWhoAmIHandler';
-import { CasListHandler } from '../../api/handlers/CasListHandler';
+import { CasApiAuthHandler } from '../../api/handlers/CasApiAuthHandler';
+import { CasApiWhoAmIHandler } from '../../api/handlers/CasApiWhoAmIHandler';
+import { CasApiListHandler } from '../../api/handlers/CasApiListHandler';
 import { ICasDb } from '../../db/interfaces/ICasDb';
 import {HTTP_METHOD, EndPointConfig, CasRouter} from '../../routing/components/CasRouter';
+import { ICasOidcInteractionsProvider } from '../../oidc/interfaces/ICasOidcInteractionsProvider';
+import { CasApiConstants } from '../constants/CasApiConstants';
 
 export class CasApiRouter extends CasRouter {
 
-    constructor(db: ICasDb, logger: ICasLogger) {
-        super(db, logger);
+    constructor(db: ICasDb, logger: ICasLogger, interactionsProvider: ICasOidcInteractionsProvider) {
+        super(db, logger, interactionsProvider);
+        this.routeDefinitions = this.getRouteDefinitions();
     }
 
     protected getRouteDefinitions(): Array<EndPointConfig> {
         return [
         {
-            apipath: '/auth',
+            apipath: CasApiConstants.authPath,
             httpMethod: HTTP_METHOD.GET,
-            handlers: [new CasAuthHandler(this.db, this.logger).handle]
+            handlers: [new CasApiAuthHandler(this.db, this.logger).getHandle()]
         },
         {
-            apipath: '/whoami',
+            apipath: CasApiConstants.whoamiPath,
             httpMethod: HTTP_METHOD.GET,
-            handlers: [new CasWhoAmIHandler(this.db, this.logger).handle]
+            handlers: [new CasApiWhoAmIHandler(this.db, this.logger).getHandle()]
         },
         {
-            apipath: '/list',
+            apipath: CasApiConstants.listPath,
             httpMethod: HTTP_METHOD.GET,
-            handlers: [new CasListHandler(this.db, this.logger).handle]
+            handlers: [new CasApiListHandler(this.db, this.logger).getHandle()]
         }
         ]
     }
