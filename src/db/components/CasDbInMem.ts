@@ -1,5 +1,5 @@
 import { ICasDb } from '../interfaces/ICasDb';
-import {CasCert} from '../../model/CasCert';
+import * as CasCert from '../../model/CasCert';
 import { CasComponent } from '../../common/CasComponent';
 import { ICasLogger } from '../../logging/interfaces/ICasLogger';
 
