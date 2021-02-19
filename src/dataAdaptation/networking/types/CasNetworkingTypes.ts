@@ -1,4 +1,4 @@
-import { CasCert } from "../../../model/CasCert";
+import * as CasCert from '../../../model/CasCert';
 // Extend Express namespace
 declare global {
     namespace Express {
