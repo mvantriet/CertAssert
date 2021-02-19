@@ -1,6 +1,6 @@
 import { CasCertificateAdaptation } from '../common/CasCommonAdaptor';
 import { DetailedPeerCertificate } from "tls";
-import { CasCert } from '../../../model/CasCert';
+import { Cert, ClientCert } from '../../../model/CasCert';
 
 export class CasCertInputAdaptor {
 
@@ -12,8 +12,8 @@ export class CasCertInputAdaptor {
           const out:CasCertificateAdaptation.CertParseResult = {};
           // Start at root of chain
           let currentCertInChain:DetailedPeerCertificate = input;
-          let clientCertificateInChain: CasCert.ClientCert;
-          let currentAdaptedCertInChain:CasCert.Cert;
+          let clientCertificateInChain: ClientCert;
+          let currentAdaptedCertInChain:Cert;
           const seenSerialNrs = [];
           let chainIndex = 0;
           if (currentCertInChain && !this.isEmpty(currentCertInChain)) {
@@ -24,7 +24,7 @@ export class CasCertInputAdaptor {
                         CasCertificateAdaptation.Adaptor.normalisePem(currentCertInChain.raw.toString('base64')));
                     if (!adaptation.failureDetails) {
                         if (chainIndex === 0) {
-                            clientCertificateInChain = adaptation.cert as CasCert.ClientCert;
+                            clientCertificateInChain = adaptation.cert as ClientCert;
                             clientCertificateInChain.authorised = authorised;
                             out.cert = clientCertificateInChain;
                             currentAdaptedCertInChain = adaptation.cert;
