@@ -1,4 +1,5 @@
-import { CasCert } from "../model/CasCert";
+import * as CasCert from "../model/CasCert";
+import { CasCertInputAdaptor } from "../dataAdaptation/certificate/components/CasInputAdaptor";
 
 export class CertificateUtils {
     
