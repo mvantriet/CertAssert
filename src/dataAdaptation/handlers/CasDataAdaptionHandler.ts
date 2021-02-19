@@ -7,7 +7,7 @@ import { ICasLogger } from "../../logging/interfaces/ICasLogger";
 import { ICasDb } from '../../db/interfaces/ICasDb';
 import { ICasApiHandler } from "../../routing/interfaces/ICasApiHandler";
 import { RequestCasExtensions } from "../../dataAdaptation/networking/types/CasNetworkingTypes";
-import { CasCert } from "../../model/CasCert";
+import { ClientCert } from "../../model/CasCert";
 
 export class CasDataAdaptationHandler extends CasHandler implements ICasApiHandler {
     constructor(db: ICasDb, logger: ICasLogger) {
@@ -20,9 +20,8 @@ export class CasDataAdaptationHandler extends CasHandler implements ICasApiHandl
             ((req.socket) as TLSSocket).getPeerCertificate(true), req.client.authorized);
         if (!clientCertAdaptation.failureDetails) {
             // Downcast
-            casCertificateAdaptation.clientCertificate = clientCertAdaptation.cert as CasCert.ClientCert;
-        }
-        req.cas = casCertificateAdaptation;
+            casCertificateAdaptation.clientCertificate = clientCertAdaptation.cert as ClientCert;
+        }        req.cas = casCertificateAdaptation;
         next();
     }
 }
