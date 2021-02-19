@@ -3,7 +3,7 @@ import * as os from 'os';
 import * as crypto from 'crypto';
 import * as asn1js from 'asn1js';
 import * as pvutils from 'pvutils';
-import {CasCert} from '../../../model/CasCert';
+import * as CasCert from '../../../model/CasCert';
 import InternalCertificate from 'pkijs/src/Certificate';
 import AttributeTypeAndValue from 'pkijs/src/AttributeTypeAndValue';
 import Extension from 'pkijs/src/Extension';
