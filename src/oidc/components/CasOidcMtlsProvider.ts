@@ -1,16 +1,29 @@
 import * as http from 'http';
 import * as http2 from 'http2';
-import { Provider } from 'oidc-provider';
+import {Request, Response} from 'express';
+import { Provider, ClaimsParameterMember, AccountClaims, Account} from 'oidc-provider';
 import { ICasOidcProvider } from '../interfaces/ICasOidcProvider';
+import { ICasOidcInteractionsProvider, CasOidcInteractionDetails } from '../interfaces/ICasOidcInteractionsProvider';
+import * as CasCert from "../../model/CasCert";
+import { RequestCasExtensions } from "../../dataAdaptation/networking/types/CasNetworkingTypes";
 import * as jose from 'jose';
+import { ICasDb } from '../../db/interfaces/ICasDb';
 
-export class CasOidcMtlsProvider implements ICasOidcProvider {
+type ClaimCtx = {
+    req: {
+        cas: RequestCasExtensions
+    }
+}
+
+export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractionsProvider {
 
     private issuer: string;
     private provider: Provider;
+    private db: ICasDb;
 
-    constructor(issuer: string) {
+    constructor(issuer: string, db: ICasDb) {
         this.issuer = issuer;
+        this.db = db;
     }
 
     public getCallback(): (req: http.IncomingMessage | http2.Http2ServerRequest, res: http.ServerResponse | http2.Http2ServerResponse) => void {
@@ -25,8 +38,15 @@ export class CasOidcMtlsProvider implements ICasOidcProvider {
                 short: { signed: true, maxAge: (1 * 60 * 60) * 1000 }
             },
             claims: {
-                email: ['email'],
-                profile: ['CN', 'O', 'OU', 'L', 'C', 'S'],
+                profile: [
+                    CasCert.DistinguishedNameAttribute["Common Name"],
+                    CasCert.DistinguishedNameAttribute.Organisation,
+                    CasCert.DistinguishedNameAttribute["Organisation Unit"],
+                    CasCert.DistinguishedNameAttribute.Country,
+                    CasCert.DistinguishedNameAttribute.Locality,
+                    CasCert.DistinguishedNameAttribute.State,
+                    CasCert.DistinguishedNameAttribute["Email Address"],
+                ],
             },
             features: {
                 devInteractions: { enabled: false }, // defaults to true
@@ -43,9 +63,9 @@ export class CasOidcMtlsProvider implements ICasOidcProvider {
                 revocation: { enabled: true }
             },
             ttl: {
-                AccessToken: 8 * 60 * 60,
+                AccessToken: 24 * 5 * 60 * 60,
                 AuthorizationCode: 360,
-                IdToken: 8 * 60 * 60,
+                IdToken: 24 * 5 * 60 * 60,
                 DeviceCode: 360,
                 RefreshToken: 5 * 24 * 60 * 60
             },
@@ -64,7 +84,33 @@ export class CasOidcMtlsProvider implements ICasOidcProvider {
                     await this.signCertToWebKey()
                 ],
               },
+            findAccount: this.findAccount.bind(this)
         });
+    }
+
+    public async getInteractionDetails(req: Request, resp: Response): Promise<CasOidcInteractionDetails> {
+        return (await this.provider.interactionDetails(req, resp) as CasOidcInteractionDetails);
+    }
+
+    public async finishInteraction(req: Request, resp: Response, result: any, mergeWithLastSubmission: boolean): Promise<void> {
+        return await this.provider.interactionFinished(req, resp, result, { mergeWithLastSubmission: mergeWithLastSubmission });
+    }
+
+    private findAccount(_ctx: any, sub: string, token: any): Account {
+        const findAccount: Account = {
+            accountId: sub,
+            claims: (_use: string, scope: string, _claims: { [key: string]: null | ClaimsParameterMember }, _rejected: string[]): AccountClaims => {
+                const cert: CasCert.Cert = this.db.getCert(sub);
+                if (cert && scope.indexOf('profile') > -1) {
+                    const out:any = cert.subject;
+                    out.sub = sub;
+                    return out;
+                }
+                return {sub: sub};
+            }    
+        }
+        findAccount.claims = findAccount.claims.bind(this);
+        return findAccount;
     }
 
     private async signCertToWebKey(): Promise<jose.JSONWebKey> {
