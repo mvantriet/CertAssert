@@ -14,7 +14,7 @@ export class CasDataAdaptationHandler extends CasHandler implements ICasApiHandl
         super(db, logger);
     }
 
-    public handle(req: Request, resp: Response, next: NextFunction): void {
+    public handle(req: Request, _resp: Response, next: NextFunction): void {
         const casCertificateAdaptation: RequestCasExtensions = {};
         const clientCertAdaptation:CasCertificateAdaptation.CertParseResult = CasCertInputAdaptor.fromSocket(
             ((req.socket) as TLSSocket).getPeerCertificate(true), req.client.authorized);
