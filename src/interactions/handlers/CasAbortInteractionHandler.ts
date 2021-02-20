@@ -14,11 +14,10 @@ export class CasAbortInteractionHandler extends CasHandler implements ICasApiHan
         this.interactionsProvider = interactionsProvider;
     }
 
-    public handle(req: Request, resp: Response): void {
-        if (req.client.authorized) {
-            resp.status(200).send({});
-        } else {
-            resp.status(403).send({});
-        }
+    public async handle(req: Request, resp: Response): Promise<void> {
+        await this.interactionsProvider.finishInteraction(req, resp, {
+            error: 'access_denied',
+            error_description: 'User aborted'
+        }, false)
     }
 }
