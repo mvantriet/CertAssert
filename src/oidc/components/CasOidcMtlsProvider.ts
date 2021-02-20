@@ -1,19 +1,18 @@
 import * as http from 'http';
 import * as http2 from 'http2';
 import {Request, Response} from 'express';
-import { Provider, ClaimsParameterMember, AccountClaims, Account} from 'oidc-provider';
+import { Provider, ClaimsParameterMember, AccountClaims, Account, ErrorOut, errors} from 'oidc-provider';
 import { ICasOidcProvider } from '../interfaces/ICasOidcProvider';
 import { ICasOidcInteractionsProvider, CasOidcInteractionDetails } from '../interfaces/ICasOidcInteractionsProvider';
 import * as CasCert from "../../model/CasCert";
-import { RequestCasExtensions } from "../../dataAdaptation/networking/types/CasNetworkingTypes";
 import * as jose from 'jose';
 import { ICasDb } from '../../db/interfaces/ICasDb';
 import { CasOidcCacheDb } from '../../db/components/CasOidcCacheDb';
+import { PathUtils } from '../../utils/PathUtils';
 
-type ClaimCtx = {
-    req: {
-        cas: RequestCasExtensions
-    }
+type HandleCtx = {
+    req: Request,
+    res: Response
 }
 
 export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractionsProvider {
@@ -21,10 +20,14 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
     private issuer: string;
     private provider: Provider;
     private db: ICasDb;
+    private logoutPath: string;
+    private errorPath: string;
 
-    constructor(issuer: string, db: ICasDb) {
+    constructor(issuer: string, db: ICasDb, logoutPath: string, errorPath: string) {
         this.issuer = issuer;
         this.db = db;
+        this.errorPath = errorPath;
+        this.logoutPath = logoutPath;
     }
 
     public getCallback(): (req: http.IncomingMessage | http2.Http2ServerRequest, res: http.ServerResponse | http2.Http2ServerResponse) => void {
@@ -61,7 +64,11 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
                     return true;
                   },
                   enabled: true },
-                revocation: { enabled: true }
+                revocation: { enabled: true },
+                rpInitiatedLogout: {
+                    enabled: true,
+                    logoutSource: this.logout.bind(this)
+                }
             },
             ttl: {
                 AccessToken: 24 * 5 * 60 * 60,
@@ -85,6 +92,7 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
                     await this.signCertToWebKey()
                 ],
             },
+            renderError: this.renderError.bind(this),
             adapter: CasOidcCacheDb,
             findAccount: this.findAccount.bind(this)
         });
@@ -96,6 +104,30 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
 
     public async finishInteraction(req: Request, resp: Response, result: any, mergeWithLastSubmission: boolean): Promise<void> {
         return await this.provider.interactionFinished(req, resp, result, { mergeWithLastSubmission: mergeWithLastSubmission });
+    }
+
+    private logout(ctx: HandleCtx, form: string): void {
+        PathUtils.redirectResponse(ctx.res, PathUtils.buildInteractionPath(PathUtils.buildPath(false, this.logoutPath), 
+            PathUtils.getFormValue(form, 'value')));
+    }
+
+    private renderError(ctx: HandleCtx, out: ErrorOut, _error: errors.OIDCProviderError | Error): void {
+        try {
+            PathUtils.redirectResponse(ctx.res, PathUtils.addQueryParams(PathUtils.buildPath(false, this.errorPath),
+            [
+                {
+                    name: 'reason',
+                    value: out.error
+                },
+                {
+                    name: 'details',
+                    value: out.error_description
+                }
+            ]
+            ));
+        } catch(err) {
+            //this.logger.log('Failed to redirect to error page');
+        }
     }
 
     private findAccount(_ctx: any, sub: string, token: any): Account {
