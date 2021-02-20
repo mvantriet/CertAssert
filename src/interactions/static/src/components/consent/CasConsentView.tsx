@@ -14,7 +14,7 @@ export type CasConsentViewProps = {
     params: {
       uid: string
     }
-  }
+  },
   location: {
     search: string
   }
@@ -24,12 +24,6 @@ interface CasConsentViewState {
   authorised: boolean,
   scopes?: string,
   client?: string
-}
-
-type ReactComponentProps = {
-  location: {
-    pathname: string
-  }
 }
 
 export class CasConsentView extends React.Component<CasConsentViewProps, CasConsentViewState> {
@@ -56,7 +50,6 @@ export class CasConsentView extends React.Component<CasConsentViewProps, CasCons
     const client:string = queryParams.client ? queryParams.client : 'UNKNOWN';
     const scopes:string = queryParams.scopes ? queryParams.scopes : '';
     axios.get(CasApiConstants.prefix + '/' + CasApiConstants.whoamiPath).then((res: AxiosResponse) => {
-      console.log(res);
       const whoamiResponse:CasApiWhoAmiResponse = {authorised: false};
       Object.assign(whoamiResponse, res.data);
       this.setState({authorised: whoamiResponse.authorised, client: client, scopes: scopes});
@@ -106,7 +99,7 @@ export class CasConsentView extends React.Component<CasConsentViewProps, CasCons
                         <div className="column col-5">
                               <div className="columns">
                                 <div className="column">
-                                  <button id="ca-consent-btn" className="btn btn-primary"
+                                  <button id="ca-consent-btn" className="btn btn-primary" autoFocus={true}
                                     onClick={this.consent.bind(this)}
                                     >Consent</button>
                                 </div>
@@ -123,7 +116,7 @@ export class CasConsentView extends React.Component<CasConsentViewProps, CasCons
                       <div className="columns">
                         <div className="column col-2"/>
                         <div className="column col-8">
-                          <button id="ca-abort-btn" className="btn btn-primary"
+                          <button id="ca-abort-btn" className="btn btn-primary" autoFocus={true}
                             onClick={this.abort.bind(this)}                                                                
                           >Abort</button>
                         </div>
