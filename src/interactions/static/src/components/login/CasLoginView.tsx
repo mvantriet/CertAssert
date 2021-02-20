@@ -109,7 +109,7 @@ export class CasLoginView extends React.Component<CasLoginViewProps, CasLoginVie
                           <div className="column col-5">
                                 <div className="columns">
                                   <div className="column">
-                                    <button id="ca-signin-btn" className="btn btn-primary"
+                                    <button id="ca-signin-btn" className="btn btn-primary" autoFocus={true}
                                       onClick={this.signIn.bind(this)}
                                       >Sign In</button>
                                   </div>
@@ -126,7 +126,7 @@ export class CasLoginView extends React.Component<CasLoginViewProps, CasLoginVie
                         <div className="columns">
                           <div className="column col-2"/>
                           <div className="column col-8">
-                            <button id="ca-abort-btn" className="btn btn-primary"
+                            <button id="ca-abort-btn" className="btn btn-primary" autoFocus={true}
                               onClick={this.abort.bind(this)}                                                                
                             >Abort</button>
                           </div>
