@@ -1,6 +1,6 @@
 {
   "name": "certassert",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Simplifying user authentication flows build around x509 certificates",
   "main": "index.ts",
   "scripts": {
@@ -63,6 +63,7 @@
     "webpack-cli": "^3.3.11"
   },
   "dependencies": {
+    "@fidm/x509": "^1.2.1",
     "asn1js": "^2.0.26",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
