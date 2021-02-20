@@ -13,6 +13,7 @@ import { CasApiRouter } from './api/components/CasApiRouter';
 import { CasInteractionsRouter } from './interactions/components/CasInteractionsRouter';
 import { CasOidcMtlsProvider } from './oidc/components/CasOidcMtlsProvider';
 import { CasDataAdaptationHandler } from './dataAdaptation/handlers/CasDataAdaptionHandler';
+import { CasCertChainVerifyHandler } from './dataAdaptation/handlers/CasCertChainVerifyHandler';
 // Import type definitions
 import './dataAdaptation/networking/types/CasNetworkingTypes';
 import { ICasDb } from './db/interfaces/ICasDb';
@@ -21,6 +22,8 @@ import { CasDbInMem } from './db/components/CasDbInMem';
 export { CasLogLevel } from './logging/interfaces/ICasLogger';
 import { CasApiConstants } from './api/constants/CasApiConstants';
 import { CasInteractionsConstants} from './interactions/constants/CasInteractionsConstants';
+import { InteractionsStaticConstants } from './interactions/static/src/constants/InteractionsStaticConstants';
+import { CertificateUtils } from './utils/CertificateUtils';
 
 export type CertAssertConfig = {
     serverCertificatePath: string;
@@ -34,6 +37,7 @@ export type CertAssertConfig = {
 
 export class CertAssert {
 
+    private config: CertAssertConfig;
     private app: core.Express;
     private server: ICasServer;
     private logger: ICasLogger;
@@ -43,14 +47,17 @@ export class CertAssert {
     private db: ICasDb;
 
     constructor(config: CertAssertConfig) {
+        this.config = config;
         this.app = express();
         this.logger = new CasLogger(config.logLevel);
         this.db = new CasDbInMem(this.logger);
-        this.oidcProvider = new CasOidcMtlsProvider(`https://localhost:${config.securePort}`, this.db);
+        this.oidcProvider = new CasOidcMtlsProvider(`https://localhost:${config.securePort}`, 
+            this.db, InteractionsStaticConstants.logoutPath, InteractionsStaticConstants.errorPath);
         this.router = new CasApiRouter(this.db, this.logger, this.oidcProvider);
         this.interactions = new CasInteractionsRouter(this.db, this.logger, this.oidcProvider);
         this.server = new CasServer(config.serverCertificateKeyPath, config.serverCertificatePath, config.acceptedCAs,
                                         this.app, config.securePort, config.httpRedirectPort, this.logger);
+
     }
 
     init(): void {
@@ -58,13 +65,15 @@ export class CertAssert {
         this.app.use(express.json());
         this.app.use(cors());
         this.app.use(compression());
-        this.app.use(new CasDataAdaptationHandler(this.db, this.logger).handle);
+        this.app.use(new CasDataAdaptationHandler(this.db, this.logger).getHandle());
+        this.app.use(new CasCertChainVerifyHandler(this.db, this.logger, 
+            CertificateUtils.inputAdaptCertArray(this.config.acceptedCAs)).getHandle());
         this.app.use(CasApiConstants.prefix, this.router.toRouter());
         this.app.use(express.static(path.join(__dirname, 'interactions', 'static', 'build')))
         this.app.use(CasInteractionsConstants.prefix, this.interactions.toRouter());
         this.oidcProvider.init().then(() => {
             this.app.use('/oidc', this.oidcProvider.getCallback());
-            this.app.get('/*', (req, res) => res.sendFile(path.join(__dirname, 'interactions', 'static', 'build', 'index.html')));
+            this.app.get('/*', (_req, res) => res.sendFile(path.join(__dirname, 'interactions', 'static', 'build', 'index.html')));
             this.server.init();    
         })
     }
