@@ -19,8 +19,20 @@ export class PathUtils {
 
     static addQueryParams(path: string, params: Array<{name: string, value: string}>): string {
         return path + this.querySep + params.map((param: {name: string, value: string}) => {
-            return param.name + '=' + param.value;
+            return param.name + '=' + this.uriEncodeComponent(param.value);
         }).join('&');
+    }
+
+    static getFormValue(input: string, key: string): string | undefined {
+        const offsetIdx = input.indexOf(key);
+        if (offsetIdx > -1) {
+            const startIdx = input.indexOf('"', offsetIdx);
+            const endIdx = input.indexOf('"', startIdx+1);
+            if (startIdx > -1 && endIdx > -1) {
+                return input.substring(startIdx+1, endIdx);
+            }
+        }
+        return;
     }
 
     static queryParamToObject(query: string) : any {
@@ -33,11 +45,11 @@ export class PathUtils {
             if (sepIdx > -1) {
                 const nextIdx = queryF.indexOf('&', pos);
                 if (nextIdx > -1) {
-                    out[queryF.substring(pos, sepIdx)] = queryF.substring(sepIdx+1, nextIdx);
+                    out[queryF.substring(pos, sepIdx)] = decodeURIComponent(queryF.substring(sepIdx+1, nextIdx));
                     pos = nextIdx+1;
                 } else {
                     // last one, parse and stop
-                    out[queryF.substring(pos, sepIdx)] = queryF.substring(sepIdx+1, queryF.length);
+                    out[queryF.substring(pos, sepIdx)] = decodeURIComponent(queryF.substring(sepIdx+1, queryF.length));
                     cont = false;
                 }
             } else {
@@ -46,6 +58,12 @@ export class PathUtils {
 	    }
 	    return out;
     } 
+
+    static uriEncodeComponent(str: string): string {
+        return encodeURIComponent(str).replace(/[!'()*]/g, function(c) {
+            return '%' + c.charCodeAt(0).toString(16);
+        });
+    }
 
     static redirectResponse(resp: any, path: string) {
         resp.redirect(path);
