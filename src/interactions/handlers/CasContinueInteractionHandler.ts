@@ -7,11 +7,9 @@ import { ICasOidcInteractionsProvider } from "../../oidc/interfaces/ICasOidcInte
 
 export class CasContinueInteractionHandler extends CasHandler implements ICasApiHandler {
     
-    private interactionsProvider:ICasOidcInteractionsProvider;
 
-    constructor(db: ICasDb, logger: ICasLogger, interactionsProvider: ICasOidcInteractionsProvider) {
+    constructor(db: ICasDb, logger: ICasLogger, _interactionsProvider: ICasOidcInteractionsProvider) {
         super(db, logger);
-        this.interactionsProvider = interactionsProvider;
     }
 
     public handle(req: Request, resp: Response): void {
