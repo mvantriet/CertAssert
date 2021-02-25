@@ -1,5 +1,4 @@
 import * as CasCert from "../model/CasCert";
-import { CasCertInputAdaptor } from "../dataAdaptation/certificate/components/CasInputAdaptor";
 import { CasCertificateAdaptation } from "../dataAdaptation/certificate/common/CasCommonAdaptor";
 import { Cert } from "../model/CasCert";
 import { readFileSync } from "fs";
@@ -17,14 +16,14 @@ export class CertificateUtils {
     }
 
     static getDnAttributeValue(dn: CasCert.DistinguishedName, attr: CasCert.DistinguishedNameAttribute, fallback?: string): string {
-        return (dn[attr] ? dn[attr] : (fallback ? fallback : this.nonExistentDnAttributeValue));
+        return (dn[attr] ? dn[attr] : (fallback ? fallback : this.nonExistentDnAttributeValue)) as string;
     }
 
     static inputAdaptCertArray(certPaths: Array<string>): Array<Cert> {
         return certPaths.map((ca: string) => readFileSync(ca))
         .map((caRaw: Buffer) => CasCertificateAdaptation.Adaptor.fromRaw(caRaw))
         .filter((caParsed: CasCertificateAdaptation.CertParseResult) => caParsed.failureDetails === undefined)
-        .map((caParsed: CasCertificateAdaptation.CertParseResult) => caParsed.cert);
+        .map((caParsed: CasCertificateAdaptation.CertParseResult) => caParsed.cert) as Array<Cert>;
     }
 
     static checkTimeValidity(cert: CasCert.Cert): boolean {
