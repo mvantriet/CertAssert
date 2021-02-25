@@ -22,12 +22,12 @@ export class CasCertChainVerifyHandler extends CasHandler implements ICasApiHand
             let verified:boolean = false;
             let currentParsed: Certificate = Certificate.fromPEM(Buffer.from(req.cas.clientCertificate.base64));
             let nextParsed: Certificate;
-            let currentCert: Cert = req.cas.clientCertificate;
+            let currentCert: Cert = req.cas.clientCertificate as Cert;
             let cont: boolean = true;
             while(verified === false && cont) {
-                const nextCert: Cert = currentCert.issuerCertRef;
+                const nextCert: Cert | undefined = currentCert.issuerCertRef;
                 if (nextCert) {
-                    nextParsed = Certificate.fromPEM(Buffer.from(currentCert.issuerCertRef.base64));
+                    nextParsed = Certificate.fromPEM(Buffer.from(nextCert.base64));
                 } else {
                     cont = false;
                     continue;
