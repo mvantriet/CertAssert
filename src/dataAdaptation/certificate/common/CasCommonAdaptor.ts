@@ -166,8 +166,9 @@ export namespace CasCertificateAdaptation {
         }
 
         private static keyUsageBitSets(bitmask:string, out:CasCert.ExtensionKeyUsage): CasCert.ExtensionKeyUsage {
-          Object.keys(CasAdaptationConstants.KEY_USAGE_BIT_MAPPING).forEach((keyUsageField: KEY_USAGE_FIELD) => {
+          Object.keys(CasAdaptationConstants.KEY_USAGE_BIT_MAPPING).forEach((fieldName: string) => {
             const prop:any = {};
+            const keyUsageField: KEY_USAGE_FIELD = fieldName as KEY_USAGE_FIELD;
             prop[keyUsageField] = bitmask[CasAdaptationConstants.KEY_USAGE_BIT_MAPPING[keyUsageField]] === '1';
             Object.assign(out, prop)
           })
@@ -344,8 +345,8 @@ export namespace CasCertificateAdaptation {
          */
         private static adaptDn(dnValuesIn: Array<AttributeTypeAndValue>): CasCert.DistinguishedName {
           const out:CasCert.DistinguishedName = {};
-          Object.keys(CasAdaptationConstants.CERT_DN_OIDS).forEach((dnField: CERT_DN_FIELD) => {
-            this.insertIfExists(dnValuesIn, dnField, CasAdaptationConstants.CERT_DN_OIDS[dnField], out);
+          Object.keys(CasAdaptationConstants.CERT_DN_OIDS).forEach((dnField: string) => {
+            this.insertIfExists(dnValuesIn, dnField, CasAdaptationConstants.CERT_DN_OIDS[dnField as CERT_DN_FIELD], out);
           })
           return out;
       }
