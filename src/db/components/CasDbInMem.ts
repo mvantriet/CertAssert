@@ -16,8 +16,8 @@ export class CasDbInMem extends CasComponent implements ICasDb {
         this.certs.set(cert.sha256DigestHex, cert);
     }
 
-    getCert(shaDigest: string): CasCert.Cert | null {
-        return this.hasCert(shaDigest) ? this.certs.get(shaDigest) : null;
+    getCert(shaDigest: string): CasCert.Cert | undefined {
+        return this.hasCert(shaDigest) ? this.certs.get(shaDigest) : undefined;
     }
 
     hasCert(shaDigest: string): boolean {
