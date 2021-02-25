@@ -10,11 +10,6 @@ import { ICasDb } from '../../db/interfaces/ICasDb';
 import { CasOidcCacheDb } from '../../db/components/CasOidcCacheDb';
 import { PathUtils } from '../../utils/PathUtils';
 
-type HandleCtx = {
-    req: Request,
-    res: Response
-}
-
 export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractionsProvider {
 
     private issuer: string;
@@ -28,6 +23,7 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
         this.db = db;
         this.errorPath = errorPath;
         this.logoutPath = logoutPath;
+        this.provider = {} as Provider;
     }
 
     public getCallback(): (req: http.IncomingMessage | http2.Http2ServerRequest, res: http.ServerResponse | http2.Http2ServerResponse) => void {
@@ -57,7 +53,7 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
                 deviceFlow: { enabled: true }, // defaults to false
                 clientCredentials: {enabled: true},
                 introspection: { 
-                  allowedPolicy: async function introspectionAllowedPolicy(ctx, client, token) {
+                  allowedPolicy: async function introspectionAllowedPolicy(ctx: any, client: any, token: any) {
                     if (client.introspectionEndpointAuthMethod === 'none' && token.clientId !== ctx.oidc.client.clientId) {
                       return false;
                     }
@@ -99,19 +95,23 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
     }
 
     public async getInteractionDetails(req: Request, resp: Response): Promise<CasOidcInteractionDetails> {
-        return (await this.provider.interactionDetails(req, resp) as CasOidcInteractionDetails);
+        return await this.provider.interactionDetails(req, resp) as CasOidcInteractionDetails;
     }
 
     public async finishInteraction(req: Request, resp: Response, result: any, mergeWithLastSubmission: boolean): Promise<void> {
         return await this.provider.interactionFinished(req, resp, result, { mergeWithLastSubmission: mergeWithLastSubmission });
     }
 
-    private logout(ctx: HandleCtx, form: string): void {
-        PathUtils.redirectResponse(ctx.res, PathUtils.buildInteractionPath(PathUtils.buildPath(false, this.logoutPath), 
-            PathUtils.getFormValue(form, 'value')));
+    private logout(ctx: any, form: string): void {
+        const val: string | undefined = PathUtils.getFormValue(form, 'value');
+        if (val) {
+            PathUtils.redirectResponse(ctx.res, PathUtils.buildInteractionPath(PathUtils.buildPath(false, this.logoutPath), val));
+        } else {
+            // log
+        }
     }
 
-    private renderError(ctx: HandleCtx, out: ErrorOut, _error: errors.OIDCProviderError | Error): void {
+    private renderError(ctx: any, out: ErrorOut, _error: errors.OIDCProviderError | Error): void {
         try {
             PathUtils.redirectResponse(ctx.res, PathUtils.addQueryParams(PathUtils.buildPath(false, this.errorPath),
             [
@@ -121,7 +121,7 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
                 },
                 {
                     name: 'details',
-                    value: out.error_description
+                    value: out.error_description ? out.error_description : "n/a"
                 }
             ]
             ));
@@ -130,17 +130,24 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
         }
     }
 
-    private findAccount(_ctx: any, sub: string, token: any): Account {
+    private findAccount(_ctx: any, sub: string, _token: any): Account {
         const findAccount: Account = {
             accountId: sub,
             claims: (_use: string, scope: string, _claims: { [key: string]: null | ClaimsParameterMember }, _rejected: string[]): AccountClaims => {
-                const cert: CasCert.Cert = this.db.getCert(sub);
+                const cert: CasCert.Cert | undefined = this.db.getCert(sub);
+                const out:any = {sub: sub};
                 if (cert && scope.indexOf('profile') > -1) {
-                    const out:any = cert.subject;
-                    out.sub = sub;
-                    return out;
+                    Object.assign(out, cert.subject)
+                    if (out.emailAddress) {
+                        delete out.emailAddress;
+                    }
                 }
-                return {sub: sub};
+                if (cert && scope.indexOf('email') > -1) {
+                    if (cert.subject.emailAddress) {
+                        out.emailAddress = cert.subject.emailAddress;
+                    }
+                }
+                return out;
             }    
         }
         findAccount.claims = findAccount.claims.bind(this);
