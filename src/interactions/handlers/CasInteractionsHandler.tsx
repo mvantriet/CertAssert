@@ -6,6 +6,7 @@ import { ICasApiHandler } from "../../routing/interfaces/ICasApiHandler";
 import { ICasOidcInteractionsProvider, CasOidcInteractionDetails } from '../../oidc/interfaces/ICasOidcInteractionsProvider';
 import { InteractionsStaticConstants } from '../static/src/constants/InteractionsStaticConstants';
 import { PathUtils } from '../../utils/PathUtils';
+import { ObjUtils } from '../../utils/ObjUtils';
 
 enum OIDC_INTERACTION {
     LOGIN='login',
@@ -33,11 +34,11 @@ export class CasInteractionsHandler extends CasHandler implements ICasApiHandler
                 PathUtils.buildPath(false, InteractionsStaticConstants.consentPath), interactionDetails.uid),
                 [{
                     name: 'client',
-                    value: interactionDetails.params.client_id
+                    value: ObjUtils.fetchField<string>(interactionDetails, ['params', 'client_id'], "unknown")
                 },
                 {
                     name: 'scopes',
-                    value: interactionDetails.prompt.details.scopes.new.join(',')
+                    value: ObjUtils.fetchField<Array<string>>(interactionDetails.prompt, ['details', 'scopes', 'new'], []).join(',')
                 }
                 ])
             );
