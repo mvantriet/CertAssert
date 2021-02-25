@@ -25,6 +25,7 @@ export abstract class CasRouter extends CasHandler implements ICasRouter {
     constructor(db: ICasDb, logger: ICasLogger, interactionsProvider: ICasOidcInteractionsProvider) {
         super(db, logger);
         this.interactionsProvider = interactionsProvider;
+        this.routeDefinitions = [];
     }
 
     public toRouter(): Router {
