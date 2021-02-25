@@ -1,6 +1,7 @@
 import { ICasDb } from '../interfaces/ICasDb';
-import {CasCert} from '../../model/CasCert';
+import * as CasCert from '../../model/CasCert';
 import { ICasLogger } from '../../logging/interfaces/ICasLogger';
+import { CasComponent } from '../../common/CasComponent';
 
 export class CasDbDDB extends CasComponent implements ICasDb {
     
@@ -12,8 +13,8 @@ export class CasDbDDB extends CasComponent implements ICasDb {
 
     }
 
-    getCert(_shaDigest: string): CasCert.Cert | null {
-        return null;
+    getCert(_shaDigest: string): CasCert.Cert | undefined {
+        return undefined;
     }
 
     hasCert(_shaDigest: string): boolean {
