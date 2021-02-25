@@ -1,6 +1,7 @@
-import {Request, Response, NextFunction} from 'express';
+import {RequestHandler} from 'express';
 
-export type ICasRouteHandle = (req: Request, resp: Response, next?: NextFunction) => void;
+
+export type ICasRouteHandle = RequestHandler;
 
 export interface ICasApiHandler {
     handle: ICasRouteHandle;
