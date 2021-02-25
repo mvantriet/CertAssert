@@ -13,7 +13,7 @@ export class CasCertInputAdaptor {
           // Start at root of chain
           let currentCertInChain:DetailedPeerCertificate = input;
           let clientCertificateInChain: ClientCert;
-          let currentAdaptedCertInChain:Cert;
+          let currentAdaptedCertInChain:Cert | undefined;
           const seenSerialNrs = [];
           let chainIndex = 0;
           if (currentCertInChain && !this.isEmpty(currentCertInChain)) {
@@ -27,10 +27,12 @@ export class CasCertInputAdaptor {
                             clientCertificateInChain = adaptation.cert as ClientCert;
                             clientCertificateInChain.authorised = authorised;
                             out.cert = clientCertificateInChain;
-                            currentAdaptedCertInChain = adaptation.cert;
+                            currentAdaptedCertInChain = clientCertificateInChain;
                         } else {
-                            currentAdaptedCertInChain.setIssuerCertRef(adaptation.cert);
-                            currentAdaptedCertInChain = adaptation.cert;
+                            if (currentAdaptedCertInChain) {
+                                currentAdaptedCertInChain.setIssuerCertRef(adaptation.cert as Cert);
+                            }
+                            currentAdaptedCertInChain = adaptation.cert as Cert;
                         }
                     } else {
                         out.failureDetails = `Certificate Input Adaptation failed at chainIndex: ${chainIndex}. Error: ${adaptation.failureDetails}`
