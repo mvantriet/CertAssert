@@ -24,8 +24,8 @@ export class CasOidcCacheDb implements Adapter {
     private model: ACCEPTED_MODEL_TYPE;
     private cacheDb = new LRU({}); // set a max
 
-    constructor(model: ACCEPTED_MODEL_TYPE) {
-        this.model = model;
+    constructor(name: string) {
+        this.model = name as ACCEPTED_MODEL_TYPE;
     }
 
     public async find(id: string): Promise<AdapterPayload | undefined | void> {
