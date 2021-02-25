@@ -41,6 +41,9 @@ export class CasServer extends CasComponent implements ICasServer {
     this.logger = logger;
     this.openSecureConnections = new Set<tls.TLSSocket>();
     this.openInsecureConnections = new Set<tls.TLSSocket>();
+    this.secureServer = new https.Server();
+    this.insecureServer = new https.Server();
+    this.secureServerOptions = {};
   }
 
   init() {
@@ -139,7 +142,7 @@ export class CasServer extends CasComponent implements ICasServer {
     // Add extra timeout to ensure listener process is cleaned up
     // For example jest otherwise will still pickup the listener process
     return Promise.all([httpsServerClose, httpServerClose]).then(() => {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve, _reject) => {
         setTimeout(() => {
           this.logger.log(`Server close done`);
           resolve()
