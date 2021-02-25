@@ -18,7 +18,7 @@ export class CasLoginInteractionHandler extends CasHandler implements ICasApiHan
         const interactionDetails: CasOidcInteractionDetails = await this.interactionsProvider.getInteractionDetails(req,resp);
 
         let result:any = {};
-        if (req.client.authorized && interactionDetails.prompt.name === 'login') {
+        if (req.client.authorized && req.cas.clientCertificate && interactionDetails.prompt.name === 'login') {
             this.db.putCert(req.cas.clientCertificate);
             result = {
                 login: {
