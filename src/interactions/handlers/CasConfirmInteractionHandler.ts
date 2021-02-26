@@ -15,16 +15,19 @@ export class CasConfirmInteractionHandler extends CasHandler implements ICasApiH
     }
 
     public async handle(req: Request, resp: Response): Promise<void> {
-        const interactionDetails: CasOidcInteractionDetails = await this.interactionsProvider.getInteractionDetails(req,resp);
-        if (req.client.authorized && interactionDetails.prompt.name === 'consent') {
-            const consent:any = {};
-            consent.rejectedScopes = [];
-            consent.rejectedClaims = [];
-            consent.replace = false;
-            const result = { consent };
-            await this.interactionsProvider.finishInteraction(req, resp, result,true);
-        } else {
-            resp.status(403).send({});
+        const interaction: CasOidcInteractionDetails | undefined = await this.interactionsProvider.getInteractionDetails(req,resp);
+        if (interaction) {
+            const interactionDetails: CasOidcInteractionDetails = interaction as CasOidcInteractionDetails;
+            if (req.client.authorized && interactionDetails.prompt.name === 'consent') {
+                const consent:any = {};
+                consent.rejectedScopes = [];
+                consent.rejectedClaims = [];
+                consent.replace = false;
+                const result = { consent };
+                await this.interactionsProvider.finishInteraction(req, resp, result,true);
+            } else {
+                resp.status(403).send({});
+            }    
         }
     }
 }
