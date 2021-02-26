@@ -54,6 +54,10 @@ function getCaConfig()
     echo "$caConfig"
 }
 
+if [ -d $GEN_DIR ]; then
+    echo "Cert chain already generated before..skipping"
+    exit 0
+fi
 echo "Making gen directory if it does not exist:"
 mkdir -p $GEN_DIR
 GEN_DIR_ABS="$(cd "$(dirname "$GEN_DIR")"; pwd)/$(basename "$GEN_DIR")"
@@ -75,6 +79,9 @@ echo "Generating CertAssertLocalClientCert that can be used for testing locally"
 openssl req -config <(echo "$CERT_ASSERT_CA_TLS_CONFIG") -extensions client_cert -newkey rsa:2048 -keyout $GEN_DIR/CertAssertLocalClientCert.key -out $GEN_DIR/CertAssertLocalClientCert_CSR.pem -nodes \
         -subj "/O=CERTASSERT/CN=LOCALCLIENT/emailAddress=clientcert@assert.com"
 openssl ca -batch -notext -config <(echo "$CERT_ASSERT_CA_TLS_CONFIG") -policy default_ca_policy -extensions client_cert -days 50 -in $GEN_DIR/CertAssertLocalClientCert_CSR.pem -out $GEN_DIR/CertAssertLocalClientCert.pem 
+openssl pkcs12 -inkey $GEN_DIR/CertAssertLocalClientCert.key -in $GEN_DIR/CertAssertLocalClientCert.pem -export -out $GEN_DIR/CertAssertLocalClientCert.pfx -passout pass:
 
-echo "Done. Use curl for local testing:"
-echo ":: curl --insecure --cert ./tests/integration/gen/cert/ca/CertAssertLocalClientCert.pem --key ./tests/integration/gen/cert/ca/CertAssertLocalClientCert.key https://localhost:8443/api/auth"
+echo "Done. "
+echo " Install the generated pfx into your browser as a client certificate (no password)"
+echo " Or use curl for local testing:"
+echo " :: curl --insecure --cert ./tests/integration/gen/cert/ca/CertAssertLocalClientCert.pem --key ./tests/integration/gen/cert/ca/CertAssertLocalClientCert.key https://localhost:8443/api/auth"
