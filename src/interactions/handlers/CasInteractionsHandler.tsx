@@ -23,25 +23,28 @@ export class CasInteractionsHandler extends CasHandler implements ICasApiHandler
     }
 
     public async handle(req: Request, resp: Response): Promise<void> {
-        const interactionDetails:CasOidcInteractionDetails = await this.interactionsProvider.getInteractionDetails(req, resp);
-        if (interactionDetails.prompt.name === OIDC_INTERACTION.LOGIN) {
-            PathUtils.redirectResponse(resp, PathUtils.buildInteractionPath(
-                PathUtils.buildPath(false, InteractionsStaticConstants.signinPath), interactionDetails.uid)
-            );
-        }
-        else if (interactionDetails.prompt.name === OIDC_INTERACTION.CONSENT) {
-            PathUtils.redirectResponse(resp, PathUtils.addQueryParams(PathUtils.buildInteractionPath(
-                PathUtils.buildPath(false, InteractionsStaticConstants.consentPath), interactionDetails.uid),
-                [{
-                    name: 'client',
-                    value: ObjUtils.fetchField<string>(interactionDetails, ['params', 'client_id'], "unknown")
-                },
-                {
-                    name: 'scopes',
-                    value: ObjUtils.fetchField<Array<string>>(interactionDetails.prompt, ['details', 'scopes', 'new'], []).join(',')
-                }
-                ])
-            );
+        const interaction: CasOidcInteractionDetails | undefined = await this.interactionsProvider.getInteractionDetails(req,resp);
+        if (interaction) {
+            const interactionDetails: CasOidcInteractionDetails = interaction as CasOidcInteractionDetails;
+            if (interactionDetails.prompt.name === OIDC_INTERACTION.LOGIN) {
+                PathUtils.redirectResponse(resp, PathUtils.buildInteractionPath(
+                    PathUtils.buildPath(false, InteractionsStaticConstants.signinPath), interactionDetails.uid)
+                );
+            }
+            else if (interactionDetails.prompt.name === OIDC_INTERACTION.CONSENT) {
+                PathUtils.redirectResponse(resp, PathUtils.addQueryParams(PathUtils.buildInteractionPath(
+                    PathUtils.buildPath(false, InteractionsStaticConstants.consentPath), interactionDetails.uid),
+                    [{
+                        name: 'client',
+                        value: ObjUtils.fetchField<string>(interactionDetails, ['params', 'client_id'], "unknown")
+                    },
+                    {
+                        name: 'scopes',
+                        value: ObjUtils.fetchField<Array<string>>(interactionDetails.prompt, ['details', 'scopes', 'new'], []).join(',')
+                    }
+                    ])
+                );
+            }               
         }
     }
 }
