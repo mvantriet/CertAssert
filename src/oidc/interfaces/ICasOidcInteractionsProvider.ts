@@ -23,6 +23,6 @@ export type CasOidcInteractionDetails = {
 }
 
 export interface ICasOidcInteractionsProvider {
-    getInteractionDetails(req: Request, resp: Response): Promise<CasOidcInteractionDetails>;
+    getInteractionDetails(req: Request, resp: Response): Promise<CasOidcInteractionDetails | undefined>;
     finishInteraction(req: Request, resp: Response, result: any, mergeWithLastSubmission: boolean): Promise<void>;
 }

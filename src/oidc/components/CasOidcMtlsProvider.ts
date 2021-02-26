@@ -5,7 +5,7 @@ import { Provider, ClaimsParameterMember, AccountClaims, Account, ErrorOut, erro
 import { ICasOidcProvider } from '../interfaces/ICasOidcProvider';
 import { ICasOidcInteractionsProvider, CasOidcInteractionDetails } from '../interfaces/ICasOidcInteractionsProvider';
 import * as CasCert from "../../model/CasCert";
-import * as jose from 'jose';
+import {JWK, JSONWebKey} from 'jose';
 import { ICasDb } from '../../db/interfaces/ICasDb';
 import { CasOidcCacheDb } from '../../db/components/CasOidcCacheDb';
 import { PathUtils } from '../../utils/PathUtils';
@@ -17,13 +17,26 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
     private db: ICasDb;
     private logoutPath: string;
     private errorPath: string;
+    private cookieKeys: Array<string>;
+    private webKeys: Array<string>;
+    private ttls: any;
 
-    constructor(issuer: string, db: ICasDb, logoutPath: string, errorPath: string) {
+    constructor(issuer: string, db: ICasDb, logoutPath: string, errorPath: string,
+                cookieKeys:Array<string>, webKeys: Array<string>) {
         this.issuer = issuer;
         this.db = db;
         this.errorPath = errorPath;
         this.logoutPath = logoutPath;
+        this.cookieKeys = cookieKeys;
+        this.webKeys = webKeys;
         this.provider = {} as Provider;
+        this.ttls = {
+            AccessToken: 24 * 5 * 60 * 60,
+            AuthorizationCode: 360,
+            IdToken: 24 * 5 * 60 * 60,
+            DeviceCode: 360,
+            RefreshToken: 5 * 24 * 60 * 60
+        };
     }
 
     public getCallback(): (req: http.IncomingMessage | http2.Http2ServerRequest, res: http.ServerResponse | http2.Http2ServerResponse) => void {
@@ -33,7 +46,7 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
     public async init(): Promise<void> {
         this.provider = new Provider(this.issuer, {
             cookies: {
-                keys: ['a5cfd81d8c'],
+                keys: this.cookieKeys,
                 long: { signed: true, maxAge: (5 * 24 * 60 * 60) * 1000 },
                 short: { signed: true, maxAge: (1 * 60 * 60) * 1000 }
             },
@@ -44,9 +57,11 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
                     CasCert.DistinguishedNameAttribute["Organisation Unit"],
                     CasCert.DistinguishedNameAttribute.Country,
                     CasCert.DistinguishedNameAttribute.Locality,
-                    CasCert.DistinguishedNameAttribute.State,
-                    CasCert.DistinguishedNameAttribute["Email Address"],
+                    CasCert.DistinguishedNameAttribute.State
                 ],
+                email: [
+                    CasCert.DistinguishedNameAttribute["Email Address"]
+                ]
             },
             features: {
                 devInteractions: { enabled: false }, // defaults to true
@@ -66,13 +81,7 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
                     logoutSource: this.logout.bind(this)
                 }
             },
-            ttl: {
-                AccessToken: 24 * 5 * 60 * 60,
-                AuthorizationCode: 360,
-                IdToken: 24 * 5 * 60 * 60,
-                DeviceCode: 360,
-                RefreshToken: 5 * 24 * 60 * 60
-            },
+            ttl: this.ttls,
             clients: [
             {
                 client_id: 'test_implicit_app',
@@ -84,22 +93,43 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
             }
             ],
             jwks: {
-                keys: [
-                    await this.signCertToWebKey()
-                ],
+                keys: this.genWebKeySet(this.webKeys)
             },
             renderError: this.renderError.bind(this),
             adapter: CasOidcCacheDb,
             findAccount: this.findAccount.bind(this)
         });
+        (this.provider as any).IdToken.expiresIn = (...args: any[]) => {
+            return this.adaptTokenExpiry(args[1].available.sub, 0, this.ttls.IdToken);
+        }
+        (this.provider as any).AccessToken.expiresIn = (...args: any[]) => {
+            return this.adaptTokenExpiry(args[1].accountId, 0, this.ttls.AccessToken);
+        }
     }
 
-    public async getInteractionDetails(req: Request, resp: Response): Promise<CasOidcInteractionDetails> {
-        return await this.provider.interactionDetails(req, resp) as CasOidcInteractionDetails;
+    public async getInteractionDetails(req: Request, resp: Response): Promise<CasOidcInteractionDetails | undefined> {
+        try {
+            return await this.provider.interactionDetails(req, resp) as CasOidcInteractionDetails;
+        } catch(err) {
+            PathUtils.redirectResponse(resp, PathUtils.addQueryParams(PathUtils.buildPath(false, this.errorPath),
+                [
+                    {name: 'reason',value: 'Invalid session'},
+                    {name: 'details',value: err.message}]
+                ));
+            return;
+        }
     }
 
     public async finishInteraction(req: Request, resp: Response, result: any, mergeWithLastSubmission: boolean): Promise<void> {
-        return await this.provider.interactionFinished(req, resp, result, { mergeWithLastSubmission: mergeWithLastSubmission });
+        try {
+            return await this.provider.interactionFinished(req, resp, result, { mergeWithLastSubmission: mergeWithLastSubmission });
+        } catch(err) {
+            PathUtils.redirectResponse(resp, PathUtils.addQueryParams(PathUtils.buildPath(false, this.errorPath),
+                [
+                    {name: 'reason',value: 'Invalid session'},
+                    {name: 'details',value: err.message}]
+                ));    
+        }
     }
 
     private logout(ctx: any, form: string): void {
@@ -154,9 +184,15 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
         return findAccount;
     }
 
-    private async signCertToWebKey(): Promise<jose.JSONWebKey> {
-        const rsaKey:jose.JWK.RSAKey = await jose.JWK.generate('RSA', 2048, {alg: 'RS256', use: 'sig'});
-        return rsaKey.toJWK(true);
+    private genWebKeySet(keys: Array<string>): Array<JSONWebKey> {
+        return keys.map((key: string) => JWK.asKey(key).toJWK(true));
     }
 
+    private adaptTokenExpiry(certSha: string, minTimeSec: number, maxTimeSec: number): number {
+        const cert:CasCert.Cert | undefined = this.db.getCert(certSha);
+        if (cert) {
+            return Math.max(Math.min((cert.validityPeriod.notAfter - Date.now())/1000.0, maxTimeSec), 0);
+        }
+        return minTimeSec;
+    }
 }
