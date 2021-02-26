@@ -15,23 +15,25 @@ export class CasLoginInteractionHandler extends CasHandler implements ICasApiHan
     }
 
     public async handle(req: Request, resp: Response): Promise<void> {
-        const interactionDetails: CasOidcInteractionDetails = await this.interactionsProvider.getInteractionDetails(req,resp);
-
-        let result:any = {};
-        if (req.client.authorized && req.cas.clientCertificate && interactionDetails.prompt.name === 'login') {
-            this.db.putCert(req.cas.clientCertificate);
-            result = {
-                login: {
-                  account: req.cas.clientCertificate.sha256DigestHex
-                },
-              };
-        } else {
-            result = {
-                error: 'access_denied',
-                error_description: 'End-User is not authorised',
-            };
-    
+        const interaction: CasOidcInteractionDetails | undefined = await this.interactionsProvider.getInteractionDetails(req,resp);
+        if (interaction) {
+            const interactionDetails: CasOidcInteractionDetails = interaction as CasOidcInteractionDetails;
+            let result:any = {};
+            if (req.client.authorized && req.cas.clientCertificate && interactionDetails.prompt.name === 'login') {
+                this.db.putCert(req.cas.clientCertificate);
+                result = {
+                    login: {
+                      account: req.cas.clientCertificate.sha256DigestHex
+                    },
+                  };
+            } else {
+                result = {
+                    error: 'access_denied',
+                    error_description: 'End-User is not authorised',
+                };
+        
+            }
+            await this.interactionsProvider.finishInteraction(req, resp, result, false);             
         }
-        await this.interactionsProvider.finishInteraction(req, resp, result, false);
     }
 }
