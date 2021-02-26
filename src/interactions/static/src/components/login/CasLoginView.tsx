@@ -43,7 +43,7 @@ export class CasLoginView extends React.Component<CasLoginViewProps, CasLoginVie
   }
 
   componentDidMount() {
-    axios.get(CasApiConstants.prefix + '/' + CasApiConstants.whoamiPath).then((res: AxiosResponse) => {
+    axios.get(CasApiConstants.prefix + CasApiConstants.whoamiPath).then((res: AxiosResponse) => {
       console.log(res);
       const whoamiResponse:CasApiWhoAmiResponse = {authorised: false};
       Object.assign(whoamiResponse, res.data);
@@ -52,10 +52,8 @@ export class CasLoginView extends React.Component<CasLoginViewProps, CasLoginVie
   }
 
   render() {
+    let certificatesRendered: Array<JSX.Element> = [];
     if (this.state.cert) {
-      // Iterate over DN attributes for subject
-      let certificatesRendered: Array<JSX.Element> = [];
-
       // Iterate the chain
       let certChain: Cert | undefined = this.state.cert;
       let index = 0;
@@ -84,6 +82,7 @@ export class CasLoginView extends React.Component<CasLoginViewProps, CasLoginVie
         certChain = certChain.issuerCertRef;
         index++;
       }
+    }
 
       return (
         <CasLoginViewStyled authorised={this.state.authorised}>
@@ -135,19 +134,10 @@ export class CasLoginView extends React.Component<CasLoginViewProps, CasLoginVie
                 </div>
               </div>
           </div>
-            
           </div>
         </CasLoginViewStyled>
       ); 
-
-    } else {
-      return (<div>
-        <CasLoginViewStyled authorised={false}>bb</CasLoginViewStyled>
-      </div>);
-    }
-
   }
-
 }
 
 export default CasLoginView;
