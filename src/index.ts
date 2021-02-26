@@ -32,7 +32,9 @@ export type CertAssertConfig = {
     securePort: number,
     httpRedirectPort: number,
     logLevel: CasLogLevel,
-    oidcIssuer: string
+    oidcIssuer: string,
+    cookieKeys: Array<string>,
+    webKeys: Array<string>
 }
 
 export class CertAssert {
@@ -52,7 +54,8 @@ export class CertAssert {
         this.logger = new CasLogger(config.logLevel);
         this.db = new CasDbInMem(this.logger);
         this.oidcProvider = new CasOidcMtlsProvider(`https://localhost:${config.securePort}`, 
-            this.db, InteractionsStaticConstants.logoutPath, InteractionsStaticConstants.errorPath);
+            this.db, InteractionsStaticConstants.logoutPath, InteractionsStaticConstants.errorPath,
+            config.cookieKeys, config.webKeys);
         this.router = new CasApiRouter(this.db, this.logger, this.oidcProvider);
         this.interactions = new CasInteractionsRouter(this.db, this.logger, this.oidcProvider);
         this.server = new CasServer(config.serverCertificateKeyPath, config.serverCertificatePath, config.acceptedCAs,
