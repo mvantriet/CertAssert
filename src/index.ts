@@ -25,6 +25,21 @@ import { CasInteractionsConstants} from './interactions/constants/CasInteraction
 import { InteractionsStaticConstants } from './interactions/static/src/constants/InteractionsStaticConstants';
 import { CertificateUtils } from './utils/CertificateUtils';
 
+export enum INTERACTION_PATH {
+    SIGNIN="signinPath",
+    CONTENT="consentPath",
+    ERROR="errorPath",
+    LOGOUT="logoutPath"
+}
+
+export type InteractionPaths = {
+    [interaction in INTERACTION_PATH]: string;
+}
+
+export type TransparentInteractionFlowToggles = {
+    [interaction in INTERACTION_PATH]: boolean
+}
+
 export type CertAssertConfig = {
     serverCertificatePath: string;
     serverCertificateKeyPath: string;
@@ -34,7 +49,14 @@ export type CertAssertConfig = {
     logLevel: CasLogLevel,
     oidcIssuer: string,
     cookieKeys: Array<string>,
-    webKeys: Array<string>
+    webKeys: Array<string>,
+    interactionPaths?: InteractionPaths,
+    transparentInteractionFlows?: TransparentInteractionFlowToggles
+}
+
+type ConfigVerificationResult = {
+    result: boolean,
+    details?: string
 }
 
 export class CertAssert {
@@ -47,17 +69,28 @@ export class CertAssert {
     private interactions: CasInteractionsRouter;
     private oidcProvider: CasOidcMtlsProvider;
     private db: ICasDb;
+    private interactionPaths: InteractionPaths;
 
     constructor(config: CertAssertConfig) {
         this.config = config;
-        this.app = express();
         this.logger = new CasLogger(config.logLevel);
+        const configVerification: ConfigVerificationResult = this.verifyConfig(config);
+        if (!configVerification.result) {
+            this.logger.log(`Config verification failed. Stopped launch. Reason: ${configVerification.details as string}`, CasLogLevel.CRITICAL);
+            process.exit(1);
+        }
+        this.app = express();
+        this.interactionPaths = (config.interactionPaths) ? config.interactionPaths : InteractionsStaticConstants;
         this.db = new CasDbInMem(this.logger);
-        this.oidcProvider = new CasOidcMtlsProvider(`https://localhost:${config.securePort}`, 
-            this.db, InteractionsStaticConstants.logoutPath, InteractionsStaticConstants.errorPath,
+        this.oidcProvider = new CasOidcMtlsProvider(this.logger, `https://localhost:${config.securePort}`, 
+            this.db, this.interactionPaths.logoutPath, this.interactionPaths.errorPath, 
+            this.isTransparentFlow(INTERACTION_PATH.LOGOUT, config.transparentInteractionFlows),
             config.cookieKeys, config.webKeys);
         this.router = new CasApiRouter(this.db, this.logger, this.oidcProvider);
-        this.interactions = new CasInteractionsRouter(this.db, this.logger, this.oidcProvider);
+        this.interactions = new CasInteractionsRouter(this.db, this.logger, this.oidcProvider,
+            this.interactionPaths.signinPath, this.interactionPaths.consentPath, 
+            this.isTransparentFlow(INTERACTION_PATH.SIGNIN, config.transparentInteractionFlows),
+            this.isTransparentFlow(INTERACTION_PATH.CONTENT, config.transparentInteractionFlows));
         this.server = new CasServer(config.serverCertificateKeyPath, config.serverCertificatePath, config.acceptedCAs,
                                         this.app, config.securePort, config.httpRedirectPort, this.logger);
 
@@ -72,12 +105,37 @@ export class CertAssert {
         this.app.use(new CasCertChainVerifyHandler(this.db, this.logger, 
             CertificateUtils.inputAdaptCertArray(this.config.acceptedCAs)).getHandle());
         this.app.use(CasApiConstants.prefix, this.router.toRouter());
-        this.app.use(express.static(path.join(__dirname, 'interactions', 'static', 'build')))
+        if (this.config.interactionPaths === undefined) {
+            this.logger.log(`TransparentFlows turned off, and no custom interactionPaths are defined in the config -> using default interactions`, CasLogLevel.INFO);
+            this.app.use(express.static(path.join(__dirname, 'interactions', 'static', 'build')))
+        }
         this.app.use(CasInteractionsConstants.prefix, this.interactions.toRouter());
         this.oidcProvider.init().then(() => {
             this.app.use('/oidc', this.oidcProvider.getCallback());
-            this.app.get('/*', (_req, res) => res.sendFile(path.join(__dirname, 'interactions', 'static', 'build', 'index.html')));
+            if (this.config.interactionPaths === undefined) {
+                // Needs to be configured lastly
+                this.app.get('/*', (_req, res) => res.sendFile(path.join(__dirname, 'interactions', 'static', 'build', 'index.html')));
+            }
             this.server.init();    
         })
+    }
+
+    private verifyConfig(config: CertAssertConfig): ConfigVerificationResult {
+        const out: ConfigVerificationResult = {
+            result: true
+        }
+
+        if (config.transparentInteractionFlows && config.interactionPaths) {
+            out.result = false;
+            out.details = `It does not make sense to define custom interactionPaths and also define transparentInteractionFlows, 
+            which basically means no user interactions. Please turn transparentInteractionFlows off (false) or do not define any
+            custom interactionPaths.`;
+        }
+        // TODO :: More config verification checks
+        return out;
+    }
+
+    private isTransparentFlow(interaction: INTERACTION_PATH, toggles?: TransparentInteractionFlowToggles): boolean {
+        return toggles ? toggles[interaction] : false;
     }
 }
