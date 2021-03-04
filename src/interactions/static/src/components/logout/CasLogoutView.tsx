@@ -1,5 +1,6 @@
 import React from "react";
 import CasLogoutViewStyled from "./CasLogoutView.styled";
+import { PathUtils} from "../../../../../utils/PathUtils";
 import "spectre.css";
 
 export type CasLogoutViewProps = {
@@ -14,6 +15,7 @@ export type CasLogoutViewProps = {
 }
 
 interface CasLogoutViewState {
+  confirmedSignout: boolean;
 }
 
 export class CasLogoutView extends React.Component<CasLogoutViewProps, CasLogoutViewState> {
@@ -21,6 +23,7 @@ export class CasLogoutView extends React.Component<CasLogoutViewProps, CasLogout
   constructor(props: CasLogoutViewProps) {
     super(props);
     this.state = {
+      confirmedSignout: false
     }
   }
 
@@ -33,10 +36,31 @@ export class CasLogoutView extends React.Component<CasLogoutViewProps, CasLogout
     window.history.back();
   }
 
+  componentWillMount() {
+    const queryParams: any = PathUtils.queryParamToObject(this.props.location.search);
+    const confirmedSignOut:boolean = !!(queryParams.confirmedSignOut ? queryParams.confirmedSignOut : false);
+    this.setState({confirmedSignout: confirmedSignOut});
+  }
+
   componentDidMount() {
+    if (this.state.confirmedSignout) {
+      const form: HTMLElement | null = document.getElementById("logoutForm");
+      if (form) {
+        (form as HTMLFormElement).submit();
+      }
+    }
   }
 
   render() {
+
+    if (this.state.confirmedSignout) {
+      // No need to render dialogue
+      return <div>
+        <form id="logoutForm" method="post" action="/oidc/session/end/confirm">
+          <input type="hidden" name="xsrf" value={this.props.match.params.uid}/>
+        </form>
+      </div>;
+    }
 
     return (
       <CasLogoutViewStyled>
