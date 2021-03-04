@@ -44,7 +44,6 @@ export class CasLoginView extends React.Component<CasLoginViewProps, CasLoginVie
 
   componentDidMount() {
     axios.get(CasApiConstants.prefix + CasApiConstants.whoamiPath).then((res: AxiosResponse) => {
-      console.log(res);
       const whoamiResponse:CasApiWhoAmiResponse = {authorised: false};
       Object.assign(whoamiResponse, res.data);
       this.setState({cert: whoamiResponse.cert, authorised: whoamiResponse.authorised});
