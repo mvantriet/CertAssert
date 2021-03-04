@@ -38,15 +38,16 @@ export class CasLogoutView extends React.Component<CasLogoutViewProps, CasLogout
 
   componentWillMount() {
     const queryParams: any = PathUtils.queryParamToObject(this.props.location.search);
-    const confirmedSignOut:boolean = !!(queryParams.confirmedSignOut ? queryParams.confirmedSignOut : false);
-    this.setState({confirmedSignout: confirmedSignOut});
+    this.setState({confirmedSignout: queryParams.confirmedSignOut === 'true'});
   }
 
   componentDidMount() {
     if (this.state.confirmedSignout) {
       const form: HTMLElement | null = document.getElementById("logoutForm");
       if (form) {
-        (form as HTMLFormElement).submit();
+        setTimeout(() => {
+          (form as HTMLFormElement).submit();
+        }, 5000)
       }
     }
   }
