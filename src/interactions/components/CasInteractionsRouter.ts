@@ -12,8 +12,18 @@ import { CasInteractionsConstants } from '../constants/CasInteractionsConstants'
 
 export class CasInteractionsRouter extends CasRouter {
 
-    constructor(db: ICasDb, logger: ICasLogger, interactionsProvider: ICasOidcInteractionsProvider) {
+    private signinPath: string;
+    private consentPath: string;
+    private transparentSiginFlow: boolean;
+    private transparentConsentFlow: boolean;
+
+    constructor(db: ICasDb, logger: ICasLogger, interactionsProvider: ICasOidcInteractionsProvider,
+        signinPath: string, consentPath: string, transparentSiginFlow: boolean, transparentConsentFlow: boolean) {
         super(db, logger, interactionsProvider);
+        this.signinPath = signinPath;
+        this.consentPath = consentPath;
+        this.transparentSiginFlow = transparentSiginFlow;
+        this.transparentConsentFlow = transparentConsentFlow;
         this.routeDefinitions = this.getRouteDefinitions();
     }
 
@@ -24,7 +34,9 @@ export class CasInteractionsRouter extends CasRouter {
                 httpMethod: HTTP_METHOD.GET,
                 handlers: [
                     CasHandler.disableCache, 
-                    new CasInteractionsHandler(this.db, this.logger, this.interactionsProvider).getHandle()
+                    new CasInteractionsHandler(this.db, this.logger, this.interactionsProvider, 
+                        this.signinPath, this.consentPath, this.transparentSiginFlow, 
+                        this.transparentConsentFlow).getHandle()
                 ]
             },
             {
