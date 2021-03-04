@@ -9,6 +9,8 @@ import {JWK, JSONWebKey} from 'jose';
 import { ICasDb } from '../../db/interfaces/ICasDb';
 import { CasOidcCacheDb } from '../../db/components/CasOidcCacheDb';
 import { PathUtils } from '../../utils/PathUtils';
+import { ICasLogger, CasLogLevel } from '../../logging/interfaces/ICasLogger';
+
 
 export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractionsProvider {
 
@@ -17,16 +19,19 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
     private db: ICasDb;
     private logoutPath: string;
     private errorPath: string;
+    private transparentInteractionFlowLogout: boolean;
     private cookieKeys: Array<string>;
     private webKeys: Array<string>;
     private ttls: any;
+    private logger: ICasLogger;
 
-    constructor(issuer: string, db: ICasDb, logoutPath: string, errorPath: string,
-                cookieKeys:Array<string>, webKeys: Array<string>) {
+    constructor(logger: ICasLogger, issuer: string, db: ICasDb, logoutPath: string, errorPath: string,
+                transparentInteractionFlowLogout: boolean, cookieKeys:Array<string>, webKeys: Array<string>) {
         this.issuer = issuer;
         this.db = db;
         this.errorPath = errorPath;
         this.logoutPath = logoutPath;
+        this.transparentInteractionFlowLogout = transparentInteractionFlowLogout;
         this.cookieKeys = cookieKeys;
         this.webKeys = webKeys;
         this.provider = {} as Provider;
@@ -37,6 +42,7 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
             DeviceCode: 360,
             RefreshToken: 5 * 24 * 60 * 60
         };
+        this.logger = logger;
     }
 
     public getCallback(): (req: http.IncomingMessage | http2.Http2ServerRequest, res: http.ServerResponse | http2.Http2ServerResponse) => void {
@@ -108,9 +114,11 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
     }
 
     public async getInteractionDetails(req: Request, resp: Response): Promise<CasOidcInteractionDetails | undefined> {
+        this.logger.log(`Finding interaction details for: ${req.originalUrl}`, CasLogLevel.DEBUG);
         try {
             return await this.provider.interactionDetails(req, resp) as CasOidcInteractionDetails;
         } catch(err) {
+            this.logger.log(`Failed to find interaction details for: ${req.originalUrl}`, CasLogLevel.DEBUG);
             PathUtils.redirectResponse(resp, PathUtils.addQueryParams(PathUtils.buildPath(false, this.errorPath),
                 [
                     {name: 'reason',value: 'Invalid session'},
@@ -122,8 +130,10 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
 
     public async finishInteraction(req: Request, resp: Response, result: any, mergeWithLastSubmission: boolean): Promise<void> {
         try {
+            this.logger.log(`Finishing interaction: ${req.originalUrl}`, CasLogLevel.DEBUG);
             return await this.provider.interactionFinished(req, resp, result, { mergeWithLastSubmission: mergeWithLastSubmission });
         } catch(err) {
+            this.logger.log(`Failed to finish interaction for: ${req.originalUrl}. Error: ${err.toString()}`, CasLogLevel.DEBUG);
             PathUtils.redirectResponse(resp, PathUtils.addQueryParams(PathUtils.buildPath(false, this.errorPath),
                 [
                     {name: 'reason',value: 'Invalid session'},
@@ -135,9 +145,21 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
     private logout(ctx: any, form: string): void {
         const val: string | undefined = PathUtils.getFormValue(form, 'value');
         if (val) {
-            PathUtils.redirectResponse(ctx.res, PathUtils.buildInteractionPath(PathUtils.buildPath(false, this.logoutPath), val));
+            this.logger.log(`Interaction value found in submitted logout form: ${val}`);
+            PathUtils.redirectResponse(ctx.res, PathUtils.addQueryParams(PathUtils.buildInteractionPath(
+                PathUtils.buildPath(false, this.logoutPath), val),
+                [{
+                    name: 'confirmedSignOut',
+                    value: this.transparentInteractionFlowLogout.toString()
+                }]));
         } else {
-            // log
+            this.logger.log(`No value found for interaction in submitted logout form. Redirecting to error page`, CasLogLevel.SEVERE);
+            PathUtils.redirectResponse(ctx.res, PathUtils.addQueryParams(PathUtils.buildPath(false, this.errorPath),
+                [
+                    {name: 'reason',value: 'Invalid interaction'},
+                    {name: 'details',value: 'No interaction was found to complete the logout'}]
+                ));
+            return;
         }
     }
 
@@ -161,10 +183,14 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
     }
 
     private findAccount(_ctx: any, sub: string, _token: any): Account {
+        this.logger.log(`Performing lookup for sub: ${sub}`, CasLogLevel.DEBUG);
         const findAccount: Account = {
             accountId: sub,
             claims: (_use: string, scope: string, _claims: { [key: string]: null | ClaimsParameterMember }, _rejected: string[]): AccountClaims => {
                 const cert: CasCert.Cert | undefined = this.db.getCert(sub);
+                if (cert) {
+                    this.logger.log(`Db lookup for: ${sub} succeeded against cert: ${cert.sha256DigestHex}`, CasLogLevel.DEBUG);
+                }
                 const out:any = {sub: sub};
                 if (cert && scope.indexOf('profile') > -1) {
                     Object.assign(out, cert.subject)
@@ -191,6 +217,7 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
     private adaptTokenExpiry(certSha: string, minTimeSec: number, maxTimeSec: number): number {
         const cert:CasCert.Cert | undefined = this.db.getCert(certSha);
         if (cert) {
+            this.logger.log(`Clamping token expiry in case the expiry of the certificate: ${cert.validityPeriod.notAfter} is earlier than the now() + maxTokenTime: ${maxTimeSec*1000}`, CasLogLevel.DEBUG);
             return Math.max(Math.min((cert.validityPeriod.notAfter - Date.now())/1000.0, maxTimeSec), 0);
         }
         return minTimeSec;
