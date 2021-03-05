@@ -1,7 +1,7 @@
 {
   "name": "certassert",
-  "version": "0.7.1",
-  "description": "Simplifying user authentication flows build around x509 certificates",
+  "version": "0.4.0",
+  "description": "A Ready-to-go solution for OpenID Connect Certificate-Bound tokens to simplify user authentication flows build around x509 certificates",
   "main": "dist/index.js",
   "module": "dist/index.es.js",
   "jsnext:main": "dist/index.es.js",
@@ -16,6 +16,8 @@
     "lint": "eslint 'src/**/*.{js,ts,tsx}' --fix",
     "clean": "rm -rf build",
     "start": "npm run start:example",
+    "start:e2e": "npm run start:e2eclient & npm run start:example",
+    "start:e2eclient": "(cd example/app && npm start)",
     "start:example": "npm run start:example:bootstrap && npm run build:interactions && ts-node example/src/app.ts",
     "start:example:bootstrap": "npm run example:certchain && npm run example:servercert && npm run example:signingkeys",
     "example:certchain": "bash ./test/integration/scripts/genCertChain.sh",
