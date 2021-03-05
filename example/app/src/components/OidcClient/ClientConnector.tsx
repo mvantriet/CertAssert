@@ -95,7 +95,9 @@ export class ClientConnector extends React.Component<ClientConnectorProps, Clien
     try {
       const res: AxiosResponse = await axios.get('https://lvh.me:9443/oidc/.well-known/openid-configuration');
       this.setState({serverUp: res.status === 200});
-    } catch(err) {}  
+    } catch(err) {
+      this.setState({serverUp: false});
+    }  
   }
 
   async login(): Promise<void> {
@@ -145,7 +147,7 @@ export class ClientConnector extends React.Component<ClientConnectorProps, Clien
 
     this.updateServerState();
 
-    setInterval(this.updateServerState, 3000);
+    setInterval(this.updateServerState.bind(this), 3000);
   }
 
   render() {
