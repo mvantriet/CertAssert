@@ -37,6 +37,8 @@
     "OpenIDConnect",
     "certassert",
     "x509",
+    "OIDC",
+    "rfc8705",
     "certificate-bound",
     "SSO",
     "federated-signin",
