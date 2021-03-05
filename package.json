@@ -1,7 +1,7 @@
 {
   "name": "certassert",
   "version": "0.5.0",
-  "description": "A ready-to-go solution for OpenID Connect X509 Certificate-bound tokens",
+  "description": "A ready-to-go solution for an OpenID Connect Provider using X509 Certificate-bound tokens",
   "main": "dist/index.js",
   "module": "dist/index.es.js",
   "jsnext:main": "dist/index.es.js",
@@ -40,7 +40,8 @@
     "certificate-bound",
     "SSO",
     "federated-signin",
-    "typescript"
+    "typescript",
+    "authentication"
   ],
   "author": "mvantriet",
   "license": "MIT",
