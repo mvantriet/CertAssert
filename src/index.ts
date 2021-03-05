@@ -3,6 +3,7 @@ import express from 'express';
 import path from 'path';
 import * as core from 'express-serve-static-core';
 import compression from "compression";
+import { ClientMetadata } from "oidc-provider";
 const cors = require('cors');
 import { ICasServer } from './server/interfaces/ICasServer';
 import { CasServer } from './server/components/CasServer';
@@ -50,6 +51,7 @@ export type CertAssertConfig = {
     oidcIssuer: string,
     cookieKeys: Array<string>,
     webKeys: Array<string>,
+    clients: Array<ClientMetadata>,
     interactionPaths?: InteractionPaths,
     transparentInteractionFlows?: TransparentInteractionFlowToggles
 }
@@ -83,7 +85,7 @@ export class CertAssert {
         this.interactionPaths = (config.interactionPaths) ? config.interactionPaths : InteractionsStaticConstants;
         this.db = new CasDbInMem(this.logger);
         this.oidcProvider = new CasOidcMtlsProvider(this.logger, `https://localhost:${config.securePort}`, 
-            this.db, this.interactionPaths.logoutPath, this.interactionPaths.errorPath, 
+            this.db, this.config.clients, this.interactionPaths.logoutPath, this.interactionPaths.errorPath, 
             this.isTransparentFlow(INTERACTION_PATH.LOGOUT, config.transparentInteractionFlows),
             config.cookieKeys, config.webKeys);
         this.router = new CasApiRouter(this.db, this.logger, this.oidcProvider);
@@ -98,8 +100,8 @@ export class CertAssert {
 
     init(): void {
         this.logger.log('Initiating CertAssert');
-        this.app.use(express.json());
         this.app.use(cors());
+        this.app.use(express.json());
         this.app.use(compression());
         this.app.use(new CasDataAdaptationHandler(this.db, this.logger).getHandle());
         this.app.use(new CasCertChainVerifyHandler(this.db, this.logger, 
