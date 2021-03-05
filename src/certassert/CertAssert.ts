@@ -84,7 +84,7 @@ export class CertAssert {
         this.app = express();
         this.interactionPaths = (config.interactionPaths) ? config.interactionPaths : InteractionsStaticConstants;
         this.db = new CasDbInMem(this.logger);
-        this.oidcProvider = new CasOidcMtlsProvider(this.logger, `https://localhost:${config.securePort}`, 
+        this.oidcProvider = new CasOidcMtlsProvider(this.logger, this.config.oidcIssuer, 
             this.db, this.config.clients, this.interactionPaths.logoutPath, this.interactionPaths.errorPath, 
             this.isTransparentFlow(INTERACTION_PATH.LOGOUT, config.transparentInteractionFlows),
             config.cookieKeys, config.webKeys);
@@ -109,14 +109,14 @@ export class CertAssert {
         this.app.use(CasApiConstants.prefix, this.router.toRouter());
         if (this.config.interactionPaths === undefined) {
             this.logger.log(`TransparentFlows turned off, and no custom interactionPaths are defined in the config -> using default interactions`, CasLogLevel.INFO);
-            this.app.use(express.static(path.join(__dirname, 'interactions', 'static', 'build')))
+            this.app.use(express.static(path.resolve(__dirname, '..', 'interactions', 'static', 'build')))
         }
         this.app.use(CasInteractionsConstants.prefix, this.interactions.toRouter());
         this.oidcProvider.init().then(() => {
             this.app.use('/oidc', this.oidcProvider.getCallback());
             if (this.config.interactionPaths === undefined) {
                 // Needs to be configured lastly
-                this.app.get('/*', (_req, res) => res.sendFile(path.join(__dirname, 'interactions', 'static', 'build', 'index.html')));
+                this.app.get('/*', (_req, res) => res.sendFile(path.resolve(__dirname, '..', 'interactions', 'static', 'build', 'index.html')));
             }
             this.server.init();    
         })
