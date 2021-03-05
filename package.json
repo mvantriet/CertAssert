@@ -1,18 +1,19 @@
 {
   "name": "certassert",
-  "version": "0.4.0",
-  "description": "A Ready-to-go solution for OpenID Connect Certificate-Bound tokens to simplify user authentication flows build around x509 certificates",
+  "version": "0.5.0",
+  "description": "A ready-to-go solution for OpenID Connect X509 Certificate-bound tokens",
   "main": "dist/index.js",
   "module": "dist/index.es.js",
   "jsnext:main": "dist/index.es.js",
   "scripts": {
-    "build": "npm run build:ts && npm run build:bundle && npm run build:index && npm run build:interactions && npm run build:assets",
+    "build": "npm run build:ts && npm run build:types && npm run build:bundle && npm run build:interactions && npm run build:assets",
     "build:interactions": "(cd src/interactions/static && npm run build)",
-    "build:bundle": "rollup -c",
+    "build:bundle": "npm run build:bundle:libs && npm run build:bundle:types",
+    "build:bundle:libs": "rollup -c",
+    "build:bundle:types": "dts-bundle --name certassert --main build/index.d.ts && mv build/certassert.d.ts dist/index.d.ts",
     "build:ts": "tsc --allowJs",
     "build:assets": "mkdir -p dist/interactions/static/build && cp -rf src/interactions/static/build/* dist/interactions/static/build/",
-    "build:types": "tsc --declaration --allowJs --emitDeclarationOnly --outDir dist",
-    "build:index": "cp -f ./build/index.d.ts ./dist",
+    "build:types": "tsc --declaration --allowJs --emitDeclarationOnly --project tsconfig.export.json --outDir build",
     "lint": "eslint 'src/**/*.{js,ts,tsx}' --fix",
     "clean": "rm -rf build",
     "start": "npm run start:example",
@@ -23,15 +24,25 @@
     "example:certchain": "bash ./test/integration/scripts/genCertChain.sh",
     "example:servercert": "bash ./test/integration/scripts/genServerCert.sh",
     "example:signingkeys": "bash ./test/integration/scripts/genSigninKeys.sh",
+    "prepare": "npm run build",
     "dev": "nodemon",
     "test": "jest"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mvantriet/CertAssert.git"
+    "url": "git+https://github.com/mvantriet/certassert.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "oidc",
+    "OpenIDConnect",
+    "certassert",
+    "x509",
+    "certificate-bound",
+    "SSO",
+    "federated-signin",
+    "typescript"
+  ],
+  "author": "mvantriet",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/mvantriet/CertAssert/issues"
@@ -82,7 +93,8 @@
     "ts-jest": "^26.4.4",
     "ts-loader": "^7.0.1",
     "ts-node": "^8.9.1",
-    "typescript": "^3.9.7"
+    "typescript": "^3.9.7",
+    "dts-bundle": "^0.7.3"
   },
   "dependencies": {
     "@fidm/x509": "^1.2.1",
