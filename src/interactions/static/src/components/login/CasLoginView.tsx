@@ -103,7 +103,7 @@ export class CasLoginView extends React.Component<CasLoginViewProps, CasLoginVie
                   <div className="action-buttons">
                       {this.state.authorised ? 
                         <div className="columns">
-                          <div className="column col-2" />
+                          <div className="column col-3" />
                           <div className="column col-5">
                                 <div className="columns">
                                   <div className="column">
