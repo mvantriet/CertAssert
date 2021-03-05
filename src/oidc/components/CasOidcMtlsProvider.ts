@@ -1,7 +1,8 @@
 import * as http from 'http';
 import * as http2 from 'http2';
 import {Request, Response} from 'express';
-import { Provider, ClaimsParameterMember, AccountClaims, Account, ErrorOut, errors} from 'oidc-provider';
+import { Provider, ClientMetadata, ClaimsParameterMember, AccountClaims, 
+    Account, ErrorOut, errors} from 'oidc-provider';
 import { ICasOidcProvider } from '../interfaces/ICasOidcProvider';
 import { ICasOidcInteractionsProvider, CasOidcInteractionDetails } from '../interfaces/ICasOidcInteractionsProvider';
 import * as CasCert from "../../model/CasCert";
@@ -17,6 +18,7 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
     private issuer: string;
     private provider: Provider;
     private db: ICasDb;
+    private clients: Array<ClientMetadata>;
     private logoutPath: string;
     private errorPath: string;
     private transparentInteractionFlowLogout: boolean;
@@ -25,10 +27,11 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
     private ttls: any;
     private logger: ICasLogger;
 
-    constructor(logger: ICasLogger, issuer: string, db: ICasDb, logoutPath: string, errorPath: string,
+    constructor(logger: ICasLogger, issuer: string, db: ICasDb, clients: Array<ClientMetadata>, logoutPath: string, errorPath: string,
                 transparentInteractionFlowLogout: boolean, cookieKeys:Array<string>, webKeys: Array<string>) {
         this.issuer = issuer;
         this.db = db;
+        this.clients = clients;
         this.errorPath = errorPath;
         this.logoutPath = logoutPath;
         this.transparentInteractionFlowLogout = transparentInteractionFlowLogout;
@@ -88,16 +91,7 @@ export class CasOidcMtlsProvider implements ICasOidcProvider, ICasOidcInteractio
                 }
             },
             ttl: this.ttls,
-            clients: [
-            {
-                client_id: 'test_implicit_app',
-                grant_types: ['implicit', 'authorization_code'],
-                response_types: ['id_token', 'code'],
-                redirect_uris: ['https://lvh.me:15000/oidc-client-sample.html'],
-                post_logout_redirect_uris: ['https://lvh.me:15000/oidc-client-sample.html'],
-                token_endpoint_auth_method: 'none'
-            }
-            ],
+            clients: this.clients,
             jwks: {
                 keys: this.genWebKeySet(this.webKeys)
             },
