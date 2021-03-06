@@ -1,6 +1,5 @@
 
-import {CasAdaptation} from '../../../../src/dataAdaptation/common/CasCommonAdaptor';
-
+import {CasCertificateAdaptation} from '../../../../src/dataAdaptation/certificate/common/CasCommonAdaptor';
 test('Should parse PEM', () => {
     const base64Cert: string = `-----BEGIN CERTIFICATE-----
     MIIDfzCCAmegAwIBAgIUYUAUh4gTdvEccaeUrVHfWtBTp9YwDQYJKoZIhvcNAQEL
@@ -24,7 +23,7 @@ test('Should parse PEM', () => {
     zayJXfcaQIdWSaIJdQ9BA6wLBq+CXjFkZ2DXkFEW/qMDHyo=
     -----END CERTIFICATE-----`;
 
-    const inputAdaptation: CasAdaptation.CertParseResult = CasAdaptation.Adaptor.fromRaw(Buffer.from(base64Cert));
+    const inputAdaptation: CasCertificateAdaptation.CertParseResult = CasCertificateAdaptation.Adaptor.fromRaw(Buffer.from(base64Cert));
     expect(inputAdaptation.cert).toBeDefined();
     expect(inputAdaptation.failureDetails).toBeFalsy();
 });
