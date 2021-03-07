@@ -4,63 +4,46 @@ A Ready-to-go solution for an OpenID Connect Provider using Certificate-Bound to
 <div align="center"><img src="doc/img/certAsserte2eDemo.gif" alt="certassert"
 	title="CertAssert sign-in" width="300" height="275" /></div>
 
-## Motivation
+The rest of this doc is outlined as follows:
+1. [Motivation](#motivation)
+2. [Lib Usage](#lib-usage)
+3. [Run the example](#run-the-example)
+4. [Integration](#integration)
+4. [OIDC Mapping](#oidc-mapping)
+4. [API](#api)
+4. [Options](#options)
+    1. [Token expiry](#token-expiry)
+    2. [Custom UI journeys](#custom-ui-journeys)
+    3. [OIDC Client configuration](#oidc-client-configuration)
+    4. [Transparent interactions](#transparent-interactions)
+4. [Contributing](#contributing)
+
+
+## <a name="motivation">Motivation</a>
 In-house x509 infrastructure is used more and more within the industry for authentication purposes. A well managed mutual x509 infrastructure has many advantages compared to a traditional username/password scheme. Examples of these advantages are: seperation of roles, no transmission of authentication secrets due to PKI, centralised management, strong non-repudiation and more seamless authentication experiences for users.
 
 The development of new experiences for users that is required to be build on existing mutual TLS infrastructure can become problematic. Examples of problems that can arise are: Duplication of CA certificates on new server instances, and incapability of leveraging serverless architecture offered by various cloud providers not supporting the desired authentication scheme.  
 
 CertAssert addresses these problems by offering a ready-to-go solution for said problems by generating Certificate-Bound tokens, as documented in <a href="https://tools.ietf.org/html/rfc8705">RFC8705</a>. CertAssert builds on the <a href="https://github.com/panva/node-oidc-provider">node-oidc-provider</a> and eases the setup for a successfull integration with existing mutual TLS infrastructure and OIDC. Simply specify the OIDC clients, paths to a domain certificate and trusted CAs, JWTs and you're up and running. A default set of user interfaces is provided by CertAssert, yet all flows are configurable.
 
-## Integration
-CertAssert works standalone when configured and integrated into your environment. There are however further integrations that can be carried out, for example to fit your mutual TLS infrastructure seamlessly with cloud platforms. AWS Cognito for example facilitates the creation of User Pools based on OIDC providers, as shown below.
+## <a name="lib-usage">Lib Usage</a>
+The lib can be installed through npm with the following command:
+```
+npm install certassert
+```
+Write a js file that imports *certassert* and instantiates an instance of *CertAssert*.
 
-<div align="center"><img src="https://docs.aws.amazon.com/cognito/latest/developerguide/images/scenario-authentication-oidc.png" alt="awscognitoopenidconnect"
-	title="AWS Cognito integration" /><p><i><sub>Source: <a href="https://docs.aws.amazon.com/cognito/index.html">AWS Cognito documentation</a></sub></i></p></div>
-
-Linking AWS Cognito with an instance of CertAssert enables authenticated users with AWS role-based access control using STS *sts:AssumeRoleWithWebIdentity*. This can fullfill requirements such as AWS console access, reading the content of private AWS S3 buckets, calling private endpoints on AWS API GW etc.
-
-## OIDC mapping
-CertAssert offers client applications the option to request access for two oAuth scopes apart from the required *openid* scope. The claims associated with each oAuth scope refer to x509 attributes of the subject's distinguished name. CertAssert thus maps conventional scopes onto x509. The table below shows the details and associated claims for both scopes.
-
-| Scope       | Claim       | Description |
-| ----------- | ----------- | ----------- |
-| profile | CN | Common Name
-| profile | C | Country
-| profile | O | Organisation
-| profile | ST | State/Province
-| profile | L | Locality
-| email | emailAddress |
-
-Note that some of these claims refer to x509 attributes that may not be defined for certificates that were used when the user signed in. In this case, the claim is simply ignored and not made part of the generated ID token. 
-
-The *sub* attribute in idtokens that are generated for authenticated users refers to the SHA-256 hash of the x509 client certificate that was used when signing in. This is a unique certificate property which makes it suitable to for the *sub* attribute.
-
-## Run the example
-Issue the following two commands:
+Clone this repo if you want to run an example instance of *CertAssert*. Build it and generate bootstrap an example environment.
 ```
 npm install
-npm run start:e2e
-```
-This will spin up a fully working e2e example including an example OIDC client application which uses the *authorization_code* flow to signin. Follow the on-screen instructions of the example OIDC client application: 
-* trusting the example generated self-signed certificates
-* and installing the example client certificate in your browser. 
-
-Wait for the OIDC provider to be up and running, as indicated by the 'Server reachable' flag on the example client application that is launched as well. Now you can sign-in and out of CertAssert.
-
-NOTE that your platform will need to support a *lvh.me* mapping to *localhost*, since *localhost* is not an allowed hostname when using implicit grant types, see <a href="https://openid.net/specs/openid-connect-registration-1_0.html">openid-connect-registration</a> for more details.
-
-## Lib usage
-The lib can be build with the following command:
-```
 npm run build
-```
-
-If you want to run a CertAssert instance from the build lib (dist folder), first generate bootstrap an example environment.
-```
 npm run start:example:bootstrap
 ```
 
-A JS example of using the fully build library is shown below. This is all that's needed to spin up an instance of CertAssert based on the artifacts generated during bootstrapping.
+This will generate some example artifacts such as domain certificate, an example CA chain and JWTs in a new folder called *test/integration/gen*.
+
+A JS example of using the fully build library is shown below. This is all that's needed to spin up an instance of CertAssert based on the artifacts generated during bootstrapping. Note that you will have to create an OIDC client to actually use the sign{in,out} flows. If you want to run a fully setup example, see [Run the example](#run-the-example). 
+
 ```javascript
 const certassert = require('./dist');
 const fs = require('fs');
@@ -89,10 +72,49 @@ const config = {
 new certassert.CertAssert(config).init();
 ```
 
-## Storage
+## <a name="run-the-example">Run the example</a>
+Issue the following two commands:
+```
+npm install
+npm run start:e2e
+```
+This will spin up a fully working e2e example including an example OIDC client application which uses the *authorization_code* flow to signin. Follow the on-screen instructions of the example OIDC client application: 
+* trusting the example generated self-signed certificates
+* and installing the example client certificate in your browser. 
+
+Wait for the OIDC provider to be up and running, as indicated by the 'Server reachable' flag on the example client application that is launched as well. Now you can sign-in and out of CertAssert.
+
+NOTE that your platform will need to support a *lvh.me* mapping to *localhost*, since *localhost* is not an allowed hostname when using implicit grant types, see <a href="https://openid.net/specs/openid-connect-registration-1_0.html">openid-connect-registration</a> for more details.
+
+
+## <a name="integration">Integration</a>
+CertAssert works standalone when configured and integrated into your environment. There are however further integrations that can be carried out, for example to fit your mutual TLS infrastructure seamlessly with cloud platforms. AWS Cognito for example facilitates the creation of User Pools based on OIDC providers, as shown below.
+
+<div align="center"><img src="https://docs.aws.amazon.com/cognito/latest/developerguide/images/scenario-authentication-oidc.png" alt="awscognitoopenidconnect"
+	title="AWS Cognito integration" /><p><i><sub>Source: <a href="https://docs.aws.amazon.com/cognito/index.html">AWS Cognito documentation</a></sub></i></p></div>
+
+Linking AWS Cognito with an instance of CertAssert enables authenticated users with AWS role-based access control using STS *sts:AssumeRoleWithWebIdentity*. This can fullfill requirements such as AWS console access, reading the content of private AWS S3 buckets, calling private endpoints on AWS API GW etc.
+
+## <a name="oidc-mapping">OIDC mapping</a>
+CertAssert offers client applications the option to request access for two oAuth scopes apart from the required *openid* scope. The claims associated with each oAuth scope refer to x509 attributes of the subject's distinguished name. CertAssert thus maps conventional scopes onto x509. The table below shows the details and associated claims for both scopes.
+
+| Scope       | Claim       | Description |
+| ----------- | ----------- | ----------- |
+| profile | CN | Common Name
+| profile | C | Country
+| profile | O | Organisation
+| profile | ST | State/Province
+| profile | L | Locality
+| email | emailAddress |
+
+Note that some of these claims refer to x509 attributes that may not be defined for certificates that were used when the user signed in. In this case, the claim is simply ignored and not made part of the generated ID token. 
+
+The *sub* attribute in idtokens that are generated for authenticated users refers to the SHA-256 hash of the x509 client certificate that was used when signing in. This is a unique certificate property which makes it suitable to for the *sub* attribute.
+
+## <a name="storage">Storage</a>
 Solley in-memory stores are currently supported by CertAssert. Meaning storage is non-persistent and session, interaction and certificate information cannot be used in a distributed fashion. Full integration with various DB engines will need to be implemented by the developer using this lib. Perhaps an abstraction to support popular DB engines will be provided in the future. Leaving the distributive argument aside, persistent storage for the information of CertAssert is arguably less critical since the actual authentication assets reside with the user. There is no need for storing user authentication information, as authentication follows through PKI.  
 
-## API
+## <a name="api">API</a>
 Mapping of claims to x509 Distinguished name attributes.
 | path        | Description |
 | ----------- | ----------- |
@@ -112,19 +134,22 @@ Mapping of claims to x509 Distinguished name attributes.
 
 ^ Can be overriden using *interactionPaths* in your CertAssertConfig instance.
 
-## Options
+## <a name="options">Options</a>
 Most of fields of the CertAssertConfig should be self-explanatory if you're familiar with oAuth and OIDC. The customisation options offered by the config are described in this section.
 
-### Token expiry
+### <a name="token-expiry">Token expiry</a>
 CertAssert uses custom token generation and adheres the expiry based on the lifetime of the client certificate the user used during authentication. Expiry intervals for the various token types can be configured through *CertAssertConfig*, however the expiry interval can get limitted by the expiry dates associated with the actual authentication asset, i.e. the client certificate. As such, the security model build around the mutual TLS infrastructure is not broken. No token will be issued that spans the lifetime of the associated client certificate.   
 
-### Custom UI journeys
+### <a name="custom-ui-journeys">Custom UI journeys</a>
 CertAssert ships with default UI journeys for the user. However, you can customised these by defining the *interactionPaths* field of the CertAssertConfig. For each user journey (signin, consent, abort etc) you can define the path where the server instance should point the user to. 
 
-### Client configuration
+### <a name="oidc-client-configuration">OIDC Client configuration</a>
 OIDC client apps can be configured in the *clients* field of the CertAssertConfig. The type definition of a client is as defined by <a href="https://github.com/panva/node-oidc-provider">node-oidc-provider</a>.
 
-### Transparent interactions (no user prompts)
+### <a name="transparent-interactions">Transparent interactions (no user prompts)</a>
 One could consider the user's selection of a client certificate upon prompt in the browser during the TLS handshake as the 'consent' in terms of federated sign-in. CertAssert can accomodate this by defining the *transparentInteractionFlows* field. For each interaction (sign-in, consent etc) a transparent flow can be activated by setting it's value to *true* (default = *false*). If true, an interaction will instantly progress without any user intervention.
 
-**BE CAREFUL with this feature.** Using transparent flows effectively lowers explicit user-consent from the application layer to the transport layer (TLS handshake). This can have implications on the user as he/she will not be exposed to consent details applying to the application level, e.g. the OIDC client ID. In other words, the user may not be aware which OIDC client application is given access to particular scopes.   
+**BE CAREFUL with this feature.** Using transparent flows effectively lowers explicit user-consent from the application layer to the transport layer (TLS handshake). This can have implications on the user as he/she will not be exposed to consent details applying to the application level, e.g. the OIDC client ID. In other words, the user may not be aware which OIDC client application is given access to particular scopes.
+
+## <a name="contributing">Contributing</a>
+See [CONTRIBUTING](CONTRIBUTING.md).
