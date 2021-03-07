@@ -109,14 +109,22 @@ export class CertAssert {
         this.app.use(CasApiConstants.prefix, this.router.toRouter());
         if (this.config.interactionPaths === undefined) {
             this.logger.log(`TransparentFlows turned off, and no custom interactionPaths are defined in the config -> using default interactions`, CasLogLevel.INFO);
-            this.app.use(express.static(path.resolve(__dirname, '..', 'interactions', 'static', 'build')))
+            if (process.env.CERTASSERT_ENV === 'dev') {
+                this.app.use(express.static(path.resolve(__dirname, '..', 'interactions', 'static', 'build')))
+            } else {
+                this.app.use(express.static(path.resolve(__dirname, '..', 'dist', 'interactions', 'static', 'build')))
+            }
         }
         this.app.use(CasInteractionsConstants.prefix, this.interactions.toRouter());
         this.oidcProvider.init().then(() => {
             this.app.use('/oidc', this.oidcProvider.getCallback());
             if (this.config.interactionPaths === undefined) {
                 // Needs to be configured lastly
-                this.app.get('/*', (_req, res) => res.sendFile(path.resolve(__dirname, '..', 'interactions', 'static', 'build', 'index.html')));
+                if (process.env.CERTASSERT_ENV === 'dev') {
+                    this.app.get('/*', (_req, res) => res.sendFile(path.resolve(__dirname, '..', 'interactions', 'static', 'build', 'index.html')));
+                } else {
+                    this.app.get('/*', (_req, res) => res.sendFile(path.resolve(__dirname, '..', 'dist', 'interactions', 'static', 'build', 'index.html')));
+                }
             }
             this.server.init();    
         })
