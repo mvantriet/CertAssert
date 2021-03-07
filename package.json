@@ -6,7 +6,7 @@
   "module": "dist/index.es.js",
   "jsnext:main": "dist/index.es.js",
   "scripts": {
-    "build": "npm run build:ts && npm run build:types && npm run build:bundle && npm run build:interactions && npm run build:assets",
+    "build": "CERTASSERT_ENV=prod npm run build:ts && npm run build:types && npm run build:bundle && npm run build:interactions && npm run build:assets",
     "build:interactions": "(cd src/interactions/static && npm run build)",
     "build:bundle": "npm run build:bundle:libs && npm run build:bundle:types",
     "build:bundle:libs": "rollup -c",
@@ -19,7 +19,7 @@
     "start": "npm run start:example",
     "start:e2e": "npm run start:e2eclient & npm run start:example",
     "start:e2eclient": "(cd example/app && npm start)",
-    "start:example": "npm run start:example:bootstrap && npm run build:interactions && ts-node example/src/app.ts",
+    "start:example": "CERTASSERT_ENV=dev npm run start:example:bootstrap && npm run build:interactions && ts-node example/src/app.ts",
     "start:example:bootstrap": "npm run example:certchain && npm run example:servercert && npm run example:signingkeys",
     "example:certchain": "bash ./test/integration/scripts/genCertChain.sh",
     "example:servercert": "bash ./test/integration/scripts/genServerCert.sh",
