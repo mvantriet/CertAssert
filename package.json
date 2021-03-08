@@ -1,6 +1,6 @@
 {
   "name": "certassert",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "A ready-to-go solution for an OpenID Connect Provider using X509 Certificate-bound tokens",
   "main": "dist/index.js",
   "module": "dist/index.es.js",
