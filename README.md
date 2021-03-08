@@ -107,9 +107,9 @@ CertAssert offers client applications the option to request access for two oAuth
 | profile | L | Locality
 | email | emailAddress |
 
-Note that some of these claims refer to x509 attributes that may not be defined for certificates that were used when the user signed in. In this case, the claim is simply ignored and not made part of the generated ID token. 
+Note that some of these claims refer to x509 attributes that may not be defined for certificates that were used when the user signed in. In this case, the claim is simply ignored and not made part of the response on the OIDC *userInfo* endpoint. 
 
-The *sub* attribute in idtokens that are generated for authenticated users refers to the SHA-256 hash of the x509 client certificate that was used when signing in. This is a unique certificate property which makes it suitable to for the *sub* attribute.
+The *sub* attribute in id tokens that are generated for authenticated users refers to the SHA-256 hash of the x509 client certificate that was used when signing in. This is a unique certificate property which makes it suitable for the *sub* attribute.
 
 ## <a name="storage">Storage</a>
 Solley in-memory stores are currently supported by CertAssert. Meaning storage is non-persistent and session, interaction and certificate information cannot be used in a distributed fashion. Full integration with various DB engines will need to be implemented by the developer using this lib. Perhaps an abstraction to support popular DB engines will be provided in the future. Leaving the distributive argument aside, persistent storage for the information of CertAssert is arguably less critical since the actual authentication assets reside with the user. There is no need for storing user authentication information, as authentication follows through PKI.  
